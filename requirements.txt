@@ -1,0 +1,6 @@
+cachetools==4.2.1
+frozendict==1.2
+iiif-prezi==0.3.0
+lxml==4.6.2
+Pillow==8.1.0
+PyLD==2.0.3
