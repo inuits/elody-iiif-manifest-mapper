@@ -13,16 +13,17 @@ def get_value_from_key_in_dict(key, dict, include_lang=False):
 
 
 class IiifManifest:
-    def __init__(self, collection_api_base_url, iiif_base_url):
+    def __init__(self, collection_api_base_url, iiif_base_url, prezi_base_url):
         self.collection_api_base_url = collection_api_base_url
         self.iiif_base_url = iiif_base_url
+        self.prezi_base_url = prezi_base_url
 
     def generate_manifest(self, entity_id):
         fac = ManifestFactory()
 
         fac.set_iiif_image_info(2.0, 2)
         # Where the resources live on the web
-        fac.set_base_prezi_uri("http://localhost")
+        fac.set_base_prezi_uri(self.prezi_base_url)
 
         entity = json.loads(
             requests.get(self.collection_api_base_url + "/entities/" + entity_id).text
