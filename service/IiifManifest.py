@@ -34,7 +34,7 @@ class IiifManifest:
             ).text
         )
 
-        fac.set_base_image_uri(self.iiif_base_url + "/iiif/3/")
+        fac.set_base_image_uri(self.iiif_base_url + "/iiif/2/")
         entity_metadata = entity["metadata"]
         lang, title = get_value_from_key_in_dict("title", entity_metadata, True)
         manifest = fac.manifest(label={lang: title})
