@@ -8,6 +8,6 @@ if [ "$APP_ENV" = "dev" ]; then
   exec flask run --host=0.0.0.0
 else
   echo "Starting gunicorn server..."
-  exec gunicorn -b 0.0.0.0:8000 app:app
+  exec gunicorn -b 0.0.0.0:8004 app:app
 fi
 
