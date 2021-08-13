@@ -7,6 +7,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from service.IiifManifest import IiifManifest
 
 from flask_restful import Resource
+from flask import after_this_request
 
 
 class GetManifest(Resource):
@@ -22,4 +23,10 @@ class GetManifest(Resource):
         scopes_required=["openid"],
     )
     def get(self, entity_id):
+
+        @after_this_request
+        def add_header(response):
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            return response
+
         return self.iiif_manifest.generate_manifest(entity_id)
