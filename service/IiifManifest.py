@@ -30,8 +30,8 @@ class IiifManifest:
 
     def generate_manifest(self, entity_id):
         user = g.oidc_token_info["email"] if hasattr(g, "oidc_token_info") else "default_uploader"
-        parent_job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest", user=user)
-        job_helper.progress_job(parent_job)
+        parent_job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest parent job", user=user)
+        parent_job = job_helper.progress_job(parent_job)
         fac = ManifestFactory()
 
         fac.set_iiif_image_info(2.0, 2)
@@ -56,8 +56,7 @@ class IiifManifest:
         seq = manifest.sequence()
         for mediafile in mediafiles:
             job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest", user=user)
-            job["parent_job_id"] = parent_job["_id"]
-            job = job_helper.progress_job(job)
+            job = job_helper.progress_job(job, parent_job_id=parent_job["_id"])
             try:
                 id = mediafile["original_file_location"].rsplit("/", 1)[1]
                 job = job_helper.progress_job(job, mediafile_id=id)
@@ -69,5 +68,5 @@ class IiifManifest:
                 job_helper.finish_job(job)
             except:
                 job_helper.fail_job(job, sys.exc_info()[0])
-
+        job_helper.finish_job(parent_job)
         return manifest.toJSON()
