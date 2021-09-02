@@ -1,6 +1,16 @@
+import os
+import sys
+
+from flask import g
 from iiif_prezi.factory import ManifestFactory
 import json
 import requests
+from classes.job_helper import JobHelper
+
+job_helper = JobHelper(
+    job_api_base_url=os.getenv("JOB_API_BASE_URL", "http://localhost:8000")
+
+)
 
 
 def get_value_from_key_in_dict(key, dict, include_lang=False):
@@ -19,6 +29,9 @@ class IiifManifest:
         self.prezi_base_url = prezi_base_url
 
     def generate_manifest(self, entity_id):
+        user = g.oidc_token_info["email"] if hasattr(g, "oidc_token_info") else "default_uploader"
+        parent_job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest", user=user)
+        job_helper.progress_job(parent_job)
         fac = ManifestFactory()
 
         fac.set_iiif_image_info(2.0, 2)
@@ -42,8 +55,19 @@ class IiifManifest:
         manifest.set_description(description)
         seq = manifest.sequence()
         for mediafile in mediafiles:
-            id = mediafile["original_file_location"].rsplit("/", 1)[1]
-            cvs = seq.canvas(ident=id, label=mediafile["filename"])
-            cvs.set_image_annotation(id, iiif=True)
+            job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest", user=user)
+            job["parent_job_id"] = parent_job["_id"]
+            job = job_helper.progress_job(job)
+            try:
+                id = mediafile["original_file_location"].rsplit("/", 1)[1]
+                job = job_helper.progress_job(job, mediafile_id=id)
+            except:
+                job_helper.fail_job(job, "Missing mediafile id")
+            try:
+                cvs = seq.canvas(ident=id, label=mediafile["filename"])
+                cvs.set_image_annotation(id, iiif=True)
+                job_helper.finish_job(job)
+            except:
+                job_helper.fail_job(job, sys.exc_info()[0])
 
         return manifest.toJSON()
