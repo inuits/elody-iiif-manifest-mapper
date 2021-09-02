@@ -49,12 +49,10 @@ class JobHelper:
     def finish_job(self, job):
         job["status"] = Status.FINISHED.value
         job["end_time"] = str(datetime.utcnow())
-        app.ramq.send(job, routing_key="dams.jobs")
         return self.__patch_job(job)
 
     def fail_job(self, job, error_message=""):
         job["status"] = Status.FAILED.value
         job["end_time"] = str(datetime.utcnow())
         job["error_message"] = error_message
-        app.ramq.send(job, routing_key="dams.jobs")
         return self.__patch_job(job)
