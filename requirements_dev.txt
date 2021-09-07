@@ -9,5 +9,6 @@ flask-oidc==1.4.0
 flask-rabmq==0.0.21
 Flask-RESTful==0.3.8
 requests==2.25.1
+job_helper==0.1.1
 
 

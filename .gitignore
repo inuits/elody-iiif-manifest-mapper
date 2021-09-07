@@ -2,3 +2,4 @@ __pycache__/
 resources/__pycache__/
 service/__pycache
 client_secrets.json
+.idea

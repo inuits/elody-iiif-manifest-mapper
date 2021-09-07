@@ -5,7 +5,7 @@ from flask import g
 from iiif_prezi.factory import ManifestFactory
 import json
 import requests
-from classes.job_helper import JobHelper
+from job_helper.job_helper import JobHelper
 
 job_helper = JobHelper(
     job_api_base_url=os.getenv("JOB_API_BASE_URL", "http://localhost:8000")
@@ -30,7 +30,7 @@ class IiifManifest:
 
     def generate_manifest(self, entity_id):
         user = g.oidc_token_info["email"] if hasattr(g, "oidc_token_info") else "default_uploader"
-        parent_job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest parent job", user=user)
+        parent_job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest parent job")
         parent_job = job_helper.progress_job(parent_job)
         fac = ManifestFactory()
 
@@ -55,7 +55,7 @@ class IiifManifest:
         manifest.set_description(description)
         seq = manifest.sequence()
         for mediafile in mediafiles:
-            job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest", user=user)
+            job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest")
             job = job_helper.progress_job(job, parent_job_id=parent_job["_id"])
             try:
                 id = mediafile["original_file_location"].rsplit("/", 1)[1]
