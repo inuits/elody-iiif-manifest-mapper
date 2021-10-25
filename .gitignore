@@ -1,5 +1,6 @@
 __pycache__/
-resources/__pycache__/
-service/__pycache
+api/resources/__pycache__/
+api/service/__pycache
 client_secrets.json
 .idea
+docker/pip.conf
