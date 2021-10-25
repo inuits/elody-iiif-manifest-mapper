@@ -18,12 +18,8 @@ class GetManifest(Resource):
             os.getenv("PREZI_BASE_URL"),
         )
 
-    @app.oidc.accept_token(
-        require_token=os.getenv("REQUIRE_TOKEN", "True").lower() in ["true", "1"],
-        scopes_required=["openid"],
-    )
+    @app.require_oauth()
     def get(self, entity_id):
-
         @after_this_request
         def add_header(response):
             response.headers["Access-Control-Allow-Origin"] = "*"

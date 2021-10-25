@@ -1,7 +1,4 @@
 import os
-import sys
-
-from flask import g
 from iiif_prezi.factory import ManifestFactory
 import json
 import requests
