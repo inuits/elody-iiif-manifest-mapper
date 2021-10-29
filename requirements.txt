@@ -5,7 +5,7 @@ lxml==4.6.2
 Pillow==8.1.0
 PyLD==2.0.3
 Flask==1.1.2
-inuits-jwt-auth==0.0.4
+inuits-jwt-auth==0.0.14
 flask-rabmq==0.0.21
 Flask-RESTful==0.3.8
 requests==2.25.1
