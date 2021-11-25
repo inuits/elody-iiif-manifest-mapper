@@ -10,4 +10,4 @@ flask-rabmq==0.0.21
 Flask-RESTful==0.3.8
 requests==2.25.1
 gunicorn==20.0.4
-job_helper==0.1.7
+job_helper==0.1.8
