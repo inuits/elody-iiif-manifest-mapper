@@ -16,6 +16,7 @@ class GetManifest(Resource):
             os.getenv("COLLECTION_API_BASE_URL"),
             os.getenv("IIIF_BASE_URL"),
             os.getenv("PREZI_BASE_URL"),
+            os.getenv("STATIC_JWT", "None"),
         )
 
     @app.require_oauth()

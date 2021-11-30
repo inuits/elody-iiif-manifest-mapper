@@ -20,10 +20,11 @@ def get_value_from_key_in_dict(key, dict, include_lang=False):
 
 
 class IiifManifest:
-    def __init__(self, collection_api_base_url, iiif_base_url, prezi_base_url):
+    def __init__(self, collection_api_base_url, iiif_base_url, prezi_base_url, api_jwt_token = None):
         self.collection_api_base_url = collection_api_base_url
         self.iiif_base_url = iiif_base_url
         self.prezi_base_url = prezi_base_url
+        self.headers = {"Authorization": "Bearer {}".format(api_jwt_token)}
 
     def generate_manifest(self, entity_id):
         parent_job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest parent job")
@@ -36,11 +37,12 @@ class IiifManifest:
             fac.set_base_prezi_uri(self.prezi_base_url)
 
             entity = json.loads(
-                requests.get(self.collection_api_base_url + "/entities/" + entity_id).text
+                requests.get(self.collection_api_base_url + "/entities/" + entity_id, headers=self.headers).text
             )
             mediafiles = json.loads(
                 requests.get(
-                    self.collection_api_base_url + "/entities/" + entity_id + "/mediafiles"
+                    self.collection_api_base_url + "/entities/" + entity_id + "/mediafiles",
+                    headers=self.headers,
                 ).text
             )
             parent_job = job_helper.progress_job(parent_job, amount_of_jobs=len(mediafiles))
