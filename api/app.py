@@ -8,11 +8,7 @@ from inuits_jwt_auth.authorization import MyResourceProtector, JWTValidator
 app = Flask(__name__)
 
 app.config.update(
-    {
-        "SECRET_KEY": "SomethingNotEntirelySecret",
-        "TESTING": True,
-        "DEBUG": True
-    }
+    {"SECRET_KEY": "SomethingNotEntirelySecret", "TESTING": True, "DEBUG": True}
 )
 
 logging.basicConfig(
@@ -26,7 +22,7 @@ logger = logging.getLogger(__name__)
 require_oauth = MyResourceProtector(
     os.getenv("STATIC_JWT", False),
     {},
-    True if os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True) else False
+    True if os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True) else False,
 )
 validator = JWTValidator(
     logger,
@@ -34,7 +30,7 @@ validator = JWTValidator(
     os.getenv("STATIC_ISSUER", False),
     os.getenv("STATIC_PUBLIC_KEY", False),
     os.getenv("REALMS", "").split(","),
-    True if os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True) else False
+    True if os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True) else False,
 )
 require_oauth.register_token_validator(validator)
 

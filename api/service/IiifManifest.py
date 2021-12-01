@@ -6,7 +6,7 @@ from job_helper.job_helper import JobHelper
 
 job_helper = JobHelper(
     job_api_base_url=os.getenv("JOB_API_BASE_URL", "http://localhost:8000"),
-    static_jwt=os.getenv("STATIC_JWT", False)
+    static_jwt=os.getenv("STATIC_JWT", False),
 )
 
 
@@ -20,14 +20,18 @@ def get_value_from_key_in_dict(key, dict, include_lang=False):
 
 
 class IiifManifest:
-    def __init__(self, collection_api_base_url, iiif_base_url, prezi_base_url, api_jwt_token = None):
+    def __init__(
+        self, collection_api_base_url, iiif_base_url, prezi_base_url, api_jwt_token=None
+    ):
         self.collection_api_base_url = collection_api_base_url
         self.iiif_base_url = iiif_base_url
         self.prezi_base_url = prezi_base_url
         self.headers = {"Authorization": "Bearer {}".format(api_jwt_token)}
 
     def generate_manifest(self, entity_id):
-        parent_job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest parent job")
+        parent_job = job_helper.create_new_job(
+            job_type="generate_manifest", job_info="Generate manifest parent job"
+        )
         try:
 
             fac = ManifestFactory()
@@ -37,15 +41,23 @@ class IiifManifest:
             fac.set_base_prezi_uri(self.prezi_base_url)
 
             entity = json.loads(
-                requests.get(self.collection_api_base_url + "/entities/" + entity_id, headers=self.headers).text
-            )
-            mediafiles = json.loads(
                 requests.get(
-                    self.collection_api_base_url + "/entities/" + entity_id + "/mediafiles",
+                    self.collection_api_base_url + "/entities/" + entity_id,
                     headers=self.headers,
                 ).text
             )
-            parent_job = job_helper.progress_job(parent_job, amount_of_jobs=len(mediafiles))
+            mediafiles = json.loads(
+                requests.get(
+                    self.collection_api_base_url
+                    + "/entities/"
+                    + entity_id
+                    + "/mediafiles",
+                    headers=self.headers,
+                ).text
+            )
+            parent_job = job_helper.progress_job(
+                parent_job, amount_of_jobs=len(mediafiles)
+            )
             fac.set_base_image_uri(self.iiif_base_url + "/iiif/2/")
             entity_metadata = entity["metadata"]
             lang, title = get_value_from_key_in_dict("title", entity_metadata, True)
@@ -54,7 +66,9 @@ class IiifManifest:
             manifest.set_description(description)
             seq = manifest.sequence()
             for mediafile in mediafiles:
-                job = job_helper.create_new_job(job_type="generate_manifest", job_info="Generate manifest")
+                job = job_helper.create_new_job(
+                    job_type="generate_manifest", job_info="Generate manifest"
+                )
                 job = job_helper.progress_job(job, parent_job_id=parent_job["_id"])
                 try:
                     id = mediafile["original_file_location"].rsplit("/", 1)[1]
