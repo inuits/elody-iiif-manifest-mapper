@@ -69,7 +69,8 @@ class IiifManifest:
                 job = job_helper.create_new_job(
                     job_type="generate_manifest", job_info="Generate manifest"
                 )
-                job = job_helper.progress_job(job, parent_job_id=parent_job["_id"])
+                parent_job_id = parent_job["_key"] if "_key" in parent_job else parent_job["_id"]
+                job = job_helper.progress_job(job, parent_job_id=parent_job_id)
                 try:
                     id = mediafile["original_file_location"].rsplit("/", 1)[1]
                     job = job_helper.progress_job(job, mediafile_id=id)
