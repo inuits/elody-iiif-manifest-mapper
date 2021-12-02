@@ -1,7 +1,8 @@
-import os
-from iiif_prezi.factory import ManifestFactory
 import json
+import os
 import requests
+
+from iiif_prezi.factory import ManifestFactory
 from job_helper.job_helper import JobHelper
 
 job_helper = JobHelper(

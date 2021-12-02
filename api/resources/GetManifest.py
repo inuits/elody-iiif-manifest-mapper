@@ -1,13 +1,9 @@
-import sys
-import os
-
 import app
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from service.IiifManifest import IiifManifest
+import os
 
 from flask_restful import Resource
 from flask import after_this_request
+from service.IiifManifest import IiifManifest
 
 
 class GetManifest(Resource):
