@@ -34,7 +34,7 @@ manifest.set_metadata(
      'value': {'nl': 'Tongeren'}
     })
 
-manifest.seeAslo = {"@id": "https://stad.gent/id/mensgemaaktobject/dmg/530009722", "format": "application/json+ld"}
+manifest.seeAlso = {"@id": "https://stad.gent/id/mensgemaaktobject/dmg/530009722", "format": "application/json+ld"}
 
 manifest.description = {"nl": "Reisstrijkijzer van de Belgische producent Nova. Dit was het enige reisstrijkijzer dat Nova op de markt heeft gebracht. Het zwarte handvat kan ingeklapt worden om zo compact mee te nemen op reis. Het toestel heeft een zwarte draaischakelaar dat de temperatuur van de te strijken stof aangeeft, wat niet frequent voorkomt bij reisstrijkijzers. Het toestel wordt in de gebruiksaanwijzing aangeprezen voor zijn 'extra platte' vorm en weegt 660 gram. De originele productverpakking, tevens aanwezig, is vormgegeven als een reiskoffertje."}
 manifest.viewingDirection = "top-to-bottom"

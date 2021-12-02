@@ -34,7 +34,7 @@ manifest.set_metadata(
      'value': {'nl': 'Tongeren'}
     })
 
-manifest.seeAslo = {"@id": "https://stad.gent/id/mensgemaaktobject/dmg/530026423", "format": "application/json+ld"}
+manifest.seeAlso = {"@id": "https://stad.gent/id/mensgemaaktobject/dmg/530026423", "format": "application/json+ld"}
 
 manifest.description = {"nl": "Doorzichtig plastic reservoir met aanduiding van maateenheden in stift. Binnenin bevinden zich diverse onderdelen. Dit is een prototype van de geurfilter van een geurloze fiteuse die door Nova ontwikkeld werd op het einde van hun productie."}
 #manifest.viewingDirection = "left-to-right"
