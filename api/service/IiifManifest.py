@@ -42,7 +42,8 @@ class IiifManifest:
                 headers=self.headers,
             ).json()
             mediafiles = requests.get(
-                f"{self.collection_api_base_url}/entities/{entity_id}/mediafiles?non_public=1"
+                f"{self.collection_api_base_url}/entities/{entity_id}/mediafiles?non_public=1",
+                headers=self.headers,
             ).json()
             parent_job = job_helper.progress_job(
                 parent_job, amount_of_jobs=len(mediafiles)
