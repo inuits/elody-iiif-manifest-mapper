@@ -34,28 +34,16 @@ class IiifManifest:
             job_type="generate_manifest", job_info="Generate manifest parent job"
         )
         try:
-
             fac = ManifestFactory()
-
             fac.set_iiif_image_info(2.0, 2)
-            # Where the resources live on the web
             fac.set_base_prezi_uri(self.prezi_base_url)
-
-            entity = json.loads(
-                requests.get(
-                    self.collection_api_base_url + "/entities/" + entity_id,
-                    headers=self.headers,
-                ).text
-            )
-            mediafiles = json.loads(
-                requests.get(
-                    self.collection_api_base_url
-                    + "/entities/"
-                    + entity_id
-                    + "/mediafiles",
-                    headers=self.headers,
-                ).text
-            )
+            entity = requests.get(
+                f"{self.collection_api_base_url}/entities/{entity_id}",
+                headers=self.headers,
+            ).json()
+            mediafiles = requests.get(
+                f"{self.collection_api_base_url}/entities/{entity_id}/mediafiles?non_public=1"
+            ).json()
             parent_job = job_helper.progress_job(
                 parent_job, amount_of_jobs=len(mediafiles)
             )
@@ -70,7 +58,9 @@ class IiifManifest:
                 job = job_helper.create_new_job(
                     job_type="generate_manifest", job_info="Generate manifest"
                 )
-                parent_job_id = parent_job["_key"] if "_key" in parent_job else parent_job["_id"]
+                parent_job_id = (
+                    parent_job["_key"] if "_key" in parent_job else parent_job["_id"]
+                )
                 job = job_helper.progress_job(job, parent_job_id=parent_job_id)
                 try:
                     id = mediafile["original_file_location"].rsplit("/", 1)[1]
@@ -78,17 +68,15 @@ class IiifManifest:
                 except Exception as ex:
                     job_helper.fail_job(job, "Missing mediafile id")
                     job_helper.fail_job(parent_job, str(ex))
-                    raise ex
                 try:
                     cvs = seq.canvas(ident=id, label=mediafile["filename"])
                     cvs.set_image_annotation(id, iiif=True)
                     job_helper.finish_job(job)
                 except Exception as ex:
+                    seq.canvases.remove(cvs)
                     job_helper.fail_job(job, str(ex))
                     job_helper.fail_job(parent_job, str(ex))
-                    raise ex
             job_helper.finish_job(parent_job)
             return manifest.toJSON()
         except Exception as ex:
             job_helper.fail_job(parent_job, str(ex))
-            raise ex
