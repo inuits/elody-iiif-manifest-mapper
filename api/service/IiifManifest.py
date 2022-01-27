@@ -10,6 +10,11 @@ job_helper = JobHelper(
     static_jwt=os.getenv("STATIC_JWT", False),
 )
 
+license_mapping = {
+    "CC0": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "In Copyright": "https://rightsstatements.org/page/InC/1.0/?language=en",
+}
+
 
 def get_value_from_key_in_dict(key, dict, include_lang=False):
     for keyvalues in dict:
@@ -71,7 +76,16 @@ class IiifManifest:
                     job_helper.fail_job(parent_job, str(ex))
                 try:
                     cvs = seq.canvas(ident=id, label=mediafile["filename"])
-                    cvs.set_image_annotation(id, iiif=True)
+                    image = cvs.set_image_annotation(id, iiif=True)
+                    license = next(
+                        (
+                            metadata
+                            for metadata in mediafile["metadata"]
+                            if metadata["key"] == "rights"
+                        ),
+                        "In Copyright",
+                    )
+                    image.license = license_mapping[license["value"]]
                     job_helper.finish_job(job)
                 except Exception as ex:
                     seq.canvases.remove(cvs)
