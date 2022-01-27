@@ -56,7 +56,7 @@ class IiifManifest:
             manifest = fac.manifest(label={lang: title})
             description = get_value_from_key_in_dict("description", entity_metadata)
             manifest.set_description(description)
-            manifest.related = {"@id": entity["data"]["@id"]}
+            manifest.rendering = {"@id": entity["data"]["@id"]}
             seq = manifest.sequence()
             for mediafile in mediafiles:
                 job = job_helper.create_new_job(
