@@ -39,9 +39,6 @@ class IiifManifest:
             job_type="generate_manifest", job_info="Generate manifest parent job"
         )
         try:
-            fac = ManifestFactory()
-            fac.set_iiif_image_info(2.0, 2)
-            fac.set_base_prezi_uri(self.prezi_base_url)
             entity = requests.get(
                 f"{self.collection_api_base_url}/entities/{entity_id}",
                 headers=self.headers,
@@ -53,12 +50,13 @@ class IiifManifest:
             parent_job = job_helper.progress_job(
                 parent_job, amount_of_jobs=len(mediafiles)
             )
-            fac.set_base_image_uri(self.iiif_base_url + "/iiif/2/")
             entity_metadata = entity["metadata"]
             lang, title = get_value_from_key_in_dict("title", entity_metadata, True)
+            fac = self.__get_manifest_factory()
             manifest = fac.manifest(label={lang: title})
             description = get_value_from_key_in_dict("description", entity_metadata)
             manifest.set_description(description)
+            manifest.related = {"@id": entity["data"]["@id"]}
             seq = manifest.sequence()
             for mediafile in mediafiles:
                 job = job_helper.create_new_job(
@@ -77,15 +75,9 @@ class IiifManifest:
                 try:
                     cvs = seq.canvas(ident=id, label=mediafile["filename"])
                     image = cvs.set_image_annotation(id, iiif=True)
-                    license = next(
-                        (
-                            metadata
-                            for metadata in mediafile["metadata"]
-                            if metadata["key"] == "rights"
-                        ),
-                        "In Copyright",
-                    )
-                    image.license = license_mapping[license["value"]]
+                    image.license = license_mapping[
+                        get_value_from_key_in_dict("rights", mediafile["metadata"])
+                    ]
                     job_helper.finish_job(job)
                 except Exception as ex:
                     seq.canvases.remove(cvs)
@@ -95,3 +87,10 @@ class IiifManifest:
             return manifest.toJSON()
         except Exception as ex:
             job_helper.fail_job(parent_job, str(ex))
+
+    def __get_manifest_factory(self):
+        fac = ManifestFactory()
+        fac.set_iiif_image_info(2.0, 2)
+        fac.set_base_prezi_uri(self.prezi_base_url)
+        fac.set_base_image_uri(self.iiif_base_url + "/iiif/2/")
+        return fac
