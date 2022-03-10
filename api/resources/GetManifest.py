@@ -15,7 +15,7 @@ class GetManifest(Resource):
             os.getenv("STATIC_JWT", "None"),
         )
 
-    @app.require_oauth("get-manifest")
+    @app.require_oauth()
     def get(self, entity_id):
         @after_this_request
         def add_header(response):
