@@ -14,6 +14,7 @@ license_mapping = {
     "CC0": "https://creativecommons.org/publicdomain/zero/1.0/",
     "In Copyright": "https://rightsstatements.org/page/InC/1.0/?language=en",
 }
+default_copyright_value = "https://rightsstatements.org/page/InC/1.0/?language=en"
 
 
 def get_value_from_key_in_dict(key, dict, include_lang=False):
@@ -75,9 +76,9 @@ class IiifManifest:
                 try:
                     cvs = seq.canvas(ident=id, label=mediafile["filename"])
                     image = cvs.set_image_annotation(id, iiif=True)
-                    image.license = license_mapping[
+                    image.license = self.__get_license_for_mediafile(
                         get_value_from_key_in_dict("rights", mediafile["metadata"])
-                    ]
+                    )
                     job_helper.finish_job(job)
                 except Exception as ex:
                     seq.canvases.remove(cvs)
@@ -94,3 +95,9 @@ class IiifManifest:
         fac.set_base_prezi_uri(self.prezi_base_url)
         fac.set_base_image_uri(self.iiif_base_url + "/iiif/2/")
         return fac
+
+    def __get_license_for_mediafile(self, license_name):
+        if license_name in license_mapping:
+            return license_mapping[license_name]
+        else:
+            return default_copyright_value
