@@ -1,7 +1,7 @@
 import app
 import os
 
-from flask_restful import Resource
+from flask_restful import Resource, abort
 from flask import after_this_request
 from service.IiifManifest import IiifManifest
 
@@ -22,4 +22,9 @@ class GetManifest(Resource):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
 
-        return self.iiif_manifest.generate_manifest(entity_id)
+        manifest = self.iiif_manifest.generate_manifest(entity_id)
+        if not manifest:
+            return abort(
+                500, message="Something went wrong while generating the manifest"
+            )
+        return manifest
