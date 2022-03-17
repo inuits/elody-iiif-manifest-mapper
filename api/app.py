@@ -5,6 +5,12 @@ from flask import Flask
 from flask_restful import Api
 from inuits_jwt_auth.authorization import MyResourceProtector, JWTValidator
 
+# OTel
+from otel.tracer import Tracer
+traceObj = Tracer("IIIF Manifest Mapper", __name__)
+# Config SDK/ API and set/get provider
+traceObj.configTracer()
+
 app = Flask(__name__)
 
 app.config.update(
@@ -18,6 +24,9 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+# OTel auto instrumentation for Flask 
+traceObj.autoInstrumentationFlask(app)
 
 require_oauth = MyResourceProtector(
     os.getenv("STATIC_JWT", False),
