@@ -35,6 +35,6 @@ require_oauth.register_token_validator(validator)
 
 api = Api(app)
 
-from resources.GetManifest import GetManifest
+from resources.manifest import Manifest
 
-api.add_resource(GetManifest, "/manifest/<string:entity_id>")
+api.add_resource(Manifest, "/manifest/<string:entity_id>")

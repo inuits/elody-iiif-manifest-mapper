@@ -9,30 +9,42 @@ job_helper = JobHelper(
     static_jwt=os.getenv("STATIC_JWT", False),
 )
 
-license_mapping = {
-    "CC0": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "In Copyright": "https://rightsstatements.org/page/InC/1.0/?language=en",
-}
-default_copyright_value = "https://rightsstatements.org/page/InC/1.0/?language=en"
 
-
-def get_value_from_key_in_dict(key, dict, include_lang=False):
-    for keyvalues in dict:
-        if keyvalues["key"] == key:
-            if include_lang:
-                return keyvalues["lang"], keyvalues["value"]
-            return keyvalues["value"]
-    return False
-
-
-class IiifManifest:
+class ManifestGenerator:
     def __init__(
-        self, collection_api_base_url, iiif_base_url, prezi_base_url, api_jwt_token=None
+        self, collection_api_url, image_api_url, presentation_api_url, static_jwt=None
     ):
-        self.collection_api_base_url = collection_api_base_url
-        self.iiif_base_url = iiif_base_url
-        self.prezi_base_url = prezi_base_url
-        self.headers = {"Authorization": f"Bearer {api_jwt_token}"}
+        self.collection_api_base_url = collection_api_url
+        self.iiif_base_url = image_api_url
+        self.prezi_base_url = presentation_api_url
+        self.headers = {"Authorization": f"Bearer {static_jwt}"}
+        self.default_copyright_value = (
+            "https://rightsstatements.org/page/InC/1.0/?language=en"
+        )
+        self.license_mapping = {
+            "CC0": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "In Copyright": "https://rightsstatements.org/page/InC/1.0/?language=en",
+        }
+
+    def __get_manifest_factory(self):
+        fac = ManifestFactory()
+        fac.set_iiif_image_info(2.0, 2)
+        fac.set_base_prezi_uri(self.prezi_base_url)
+        fac.set_base_image_uri(self.iiif_base_url + "/iiif/2/")
+        return fac
+
+    def __get_license_for_mediafile(self, license_name):
+        if license_name in self.license_mapping:
+            return self.license_mapping[license_name]
+        return self.default_copyright_value
+
+    def __get_metadata_value_with_key(self, metadata, key, include_lang=False):
+        for item in metadata:
+            if item["key"] == key:
+                if include_lang:
+                    return item["lang"], item["value"]
+                return item["value"]
+        return False
 
     def generate_manifest(self, entity_id):
         parent_job = job_helper.create_new_job(
@@ -50,11 +62,14 @@ class IiifManifest:
             parent_job = job_helper.progress_job(
                 parent_job, amount_of_jobs=len(mediafiles)
             )
-            entity_metadata = entity["metadata"]
-            lang, title = get_value_from_key_in_dict("title", entity_metadata, True)
+            lang, title = self.__get_metadata_value_with_key(
+                "title", entity["metadata"], True
+            )
             fac = self.__get_manifest_factory()
             manifest = fac.manifest(label={lang: title})
-            description = get_value_from_key_in_dict("description", entity_metadata)
+            description = self.__get_metadata_value_with_key(
+                "description", entity["metadata"]
+            )
             manifest.set_description(description)
             manifest.rendering = {"@id": entity["data"]["@id"]}
             seq = manifest.sequence()
@@ -76,7 +91,9 @@ class IiifManifest:
                     cvs = seq.canvas(ident=id, label=mediafile["filename"])
                     image = cvs.set_image_annotation(id, iiif=True)
                     image.license = self.__get_license_for_mediafile(
-                        get_value_from_key_in_dict("rights", mediafile["metadata"])
+                        self.__get_metadata_value_with_key(
+                            "rights", mediafile["metadata"]
+                        )
                     )
                     job_helper.finish_job(job)
                 except Exception as ex:
@@ -87,15 +104,3 @@ class IiifManifest:
             return manifest.toJSON()
         except Exception as ex:
             job_helper.fail_job(parent_job, str(ex))
-
-    def __get_manifest_factory(self):
-        fac = ManifestFactory()
-        fac.set_iiif_image_info(2.0, 2)
-        fac.set_base_prezi_uri(self.prezi_base_url)
-        fac.set_base_image_uri(self.iiif_base_url + "/iiif/2/")
-        return fac
-
-    def __get_license_for_mediafile(self, license_name):
-        if license_name in license_mapping:
-            return license_mapping[license_name]
-        return default_copyright_value
