@@ -7,6 +7,12 @@ from flask_restful import Api
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import MyResourceProtector, JWTValidator
 
+# OTel
+from otel.tracer import Tracer
+traceObj = Tracer("IIIF Manifest Mapper", __name__)
+# Config SDK/ API and set/get provider
+traceObj.configTracer()
+
 app = Flask(__name__)
 
 app.config.update(
@@ -21,6 +27,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# OTel auto instrumentation for Flask 
+traceObj.autoInstrumentationFlask(app)
 
 def iiif_available():
     return True, requests.get(f'{os.getenv("IIIF_BASE_URL")}{"/health"}').text
