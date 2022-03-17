@@ -33,6 +33,12 @@ traceObject.trace.get_tracer_provider().add_span_processor(
 )
 
 
+# OTel
+from otel.tracer import Tracer
+traceObj = Tracer("IIIF Manifest Mapper", __name__)
+# Config SDK/ API and set/get provider
+traceObj.configTracer()
+
 app = Flask(__name__)
 
 app.config.update(
