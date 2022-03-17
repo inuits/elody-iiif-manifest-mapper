@@ -1,4 +1,3 @@
-import json
 import os
 import requests
 
@@ -33,7 +32,7 @@ class IiifManifest:
         self.collection_api_base_url = collection_api_base_url
         self.iiif_base_url = iiif_base_url
         self.prezi_base_url = prezi_base_url
-        self.headers = {"Authorization": "Bearer {}".format(api_jwt_token)}
+        self.headers = {"Authorization": f"Bearer {api_jwt_token}"}
 
     def generate_manifest(self, entity_id):
         parent_job = job_helper.create_new_job(
@@ -99,5 +98,4 @@ class IiifManifest:
     def __get_license_for_mediafile(self, license_name):
         if license_name in license_mapping:
             return license_mapping[license_name]
-        else:
-            return default_copyright_value
+        return default_copyright_value

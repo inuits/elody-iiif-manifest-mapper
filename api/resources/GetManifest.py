@@ -24,7 +24,5 @@ class GetManifest(Resource):
 
         manifest = self.iiif_manifest.generate_manifest(entity_id)
         if not manifest:
-            return abort(
-                500, message="Something went wrong while generating the manifest"
-            )
+            abort(500, message="Something went wrong while generating the manifest")
         return manifest
