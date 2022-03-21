@@ -63,12 +63,12 @@ class ManifestGenerator:
                 parent_job, amount_of_jobs=len(mediafiles)
             )
             lang, title = self.__get_metadata_value_with_key(
-                "title", entity["metadata"], True
+                entity["metadata"], "title", True
             )
             fac = self.__get_manifest_factory()
             manifest = fac.manifest(label={lang: title})
             description = self.__get_metadata_value_with_key(
-                "description", entity["metadata"]
+                entity["metadata"], "description"
             )
             manifest.set_description(description)
             manifest.rendering = {"@id": entity["data"]["@id"]}
@@ -92,7 +92,7 @@ class ManifestGenerator:
                     image = cvs.set_image_annotation(id, iiif=True)
                     image.license = self.__get_license_for_mediafile(
                         self.__get_metadata_value_with_key(
-                            "rights", mediafile["metadata"]
+                            mediafile["metadata"], "rights"
                         )
                     )
                     job_helper.finish_job(job)
