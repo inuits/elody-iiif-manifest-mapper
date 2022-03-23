@@ -9,9 +9,16 @@ from inuits_jwt_auth.authorization import MyResourceProtector, JWTValidator
 
 # OTel
 from otel.tracer import Tracer
-traceObj = Tracer("IIIF Manifest Mapper", __name__)
-# Config SDK/ API and set/get provider
-traceObj.configTracer()
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+traceObject = Tracer("IIIF Manifest Mapper", __name__)
+traceObject.configTracer()
+traceObject.trace.get_tracer_provider().add_span_processor(
+    # SimpleSpanProcessor(ConsoleSpanExporter())
+    BatchSpanProcessor(traceObject.OTLPSpanExporter)
+)
+
 
 app = Flask(__name__)
 
@@ -27,8 +34,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# OTel auto instrumentation for Flask 
-traceObj.autoInstrumentationFlask(app)
+FlaskInstrumentor().instrument_app(app)
 
 def iiif_available():
     return True, requests.get(f'{os.getenv("IIIF_BASE_URL")}{"/health"}').text
