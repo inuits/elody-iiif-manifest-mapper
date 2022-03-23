@@ -22,9 +22,16 @@ trace.get_tracer_provider().add_span_processor(
 
 # OTel
 from otel.tracer import Tracer
-traceObj = Tracer("IIIF Manifest Mapper", __name__)
-# Config SDK/ API and set/get provider
-traceObj.configTracer()
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+traceObject = Tracer("IIIF Manifest Mapper", __name__)
+traceObject.configTracer()
+traceObject.trace.get_tracer_provider().add_span_processor(
+    # SimpleSpanProcessor(ConsoleSpanExporter())
+    BatchSpanProcessor(traceObject.OTLPSpanExporter)
+)
+
 
 app = Flask(__name__)
 
