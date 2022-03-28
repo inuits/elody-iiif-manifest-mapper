@@ -3,6 +3,7 @@ import os
 
 from flask import Flask
 from flask_restful import Api
+from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import MyResourceProtector, JWTValidator
 
 app = Flask(__name__)
@@ -19,6 +20,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+health = HealthCheck()
+app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 require_oauth = MyResourceProtector(
     os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
 )
