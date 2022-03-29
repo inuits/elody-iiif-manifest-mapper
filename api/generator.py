@@ -5,7 +5,7 @@ from iiif_prezi.factory import ManifestFactory
 from job_helper.job_helper import JobHelper
 
 job_helper = JobHelper(
-    job_api_base_url=os.getenv("JOB_API_BASE_URL", "http://localhost:8000"),
+    job_api_base_url=os.getenv("JOB_API_BASE_URL"),
     static_jwt=os.getenv("STATIC_JWT", False),
 )
 
