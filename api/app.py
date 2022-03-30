@@ -1,6 +1,7 @@
 import logging
 import os
 
+import requests
 from flask import Flask
 from flask_restful import Api
 from healthcheck import HealthCheck
@@ -20,8 +21,17 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+
+def iiif_available():
+    return True, requests.get(f'{os.getenv("IIIF_BASE_URL")}{"/health"}').text
+
+
 health = HealthCheck()
+if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
+    health.add_check(iiif_available)
+
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
+
 require_oauth = MyResourceProtector(
     os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
 )
