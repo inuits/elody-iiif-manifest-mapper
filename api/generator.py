@@ -77,7 +77,7 @@ class ManifestGenerator:
                 entity["metadata"], "title", True
             )
             fac = self.__get_manifest_factory()
-            manifest = fac.manifest(label={lang: title})
+            manifest = fac.manifest(ident=f"{self.prezi_base_url}manifest/{entity_id}", label={lang: title})
             description = self.__get_metadata_value_with_key(
                 entity["metadata"], "description"
             )
@@ -112,7 +112,7 @@ class ManifestGenerator:
                     job_helper.fail_job(job, str(ex))
                     job_helper.fail_job(parent_job, str(ex))
             job_helper.finish_job(parent_job)
-            return manifest.toJSON()
+            return manifest.toJSON(top=True)
         except Exception as ex:
             job_helper.fail_job(parent_job, str(ex))
             raise
