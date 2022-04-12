@@ -1,6 +1,7 @@
 import app
 import os
 
+from exceptions import EntityDoesNotExist, NoMediafiles
 from flask_restful import Resource, abort
 from flask import after_this_request
 from generator import ManifestGenerator
@@ -22,7 +23,12 @@ class Manifest(Resource):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
 
-        manifest = self.manifest_generator.generate_manifest(entity_id)
-        if not manifest:
+        try:
+            manifest = self.manifest_generator.generate_manifest(entity_id)
+            return manifest
+        except EntityDoesNotExist as ex:
+            abort(404, message=str(ex))
+        except NoMediafiles as ex:
+            abort(403, message=str(ex))
+        except Exception:
             abort(500, message="Something went wrong while generating the manifest")
-        return manifest

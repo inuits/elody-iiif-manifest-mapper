@@ -1,6 +1,7 @@
 import os
 import requests
 
+from exceptions import EntityDoesNotExist, NoMediafiles
 from iiif_prezi.factory import ManifestFactory
 from job_helper.job_helper import JobHelper
 
@@ -46,6 +47,14 @@ class ManifestGenerator:
                 return item["value"]
         return False
 
+    def __check_entity(self, entity):
+        if "message" in entity and "metadata" not in entity:
+            raise EntityDoesNotExist(entity["message"])
+
+    def __check_mediafiles(self, mediafiles):
+        if not mediafiles or len(mediafiles) == 0:
+            raise NoMediafiles("You don't have permission to access this resource")
+
     def generate_manifest(self, entity_id):
         parent_job = job_helper.create_new_job(
             job_type="generate_manifest", job_info="Generate manifest parent job"
@@ -55,10 +64,12 @@ class ManifestGenerator:
                 f"{self.collection_api_base_url}/entities/{entity_id}",
                 headers=self.headers,
             ).json()
+            self.__check_entity(entity)
             mediafiles = requests.get(
                 f"{self.collection_api_base_url}/entities/{entity_id}/mediafiles",
                 headers=self.headers,
             ).json()
+            self.__check_mediafiles(mediafiles)
             parent_job = job_helper.progress_job(
                 parent_job, amount_of_jobs=len(mediafiles)
             )
@@ -104,3 +115,4 @@ class ManifestGenerator:
             return manifest.toJSON()
         except Exception as ex:
             job_helper.fail_job(parent_job, str(ex))
+            raise
