@@ -26,6 +26,5 @@ class Tracer:
             )
         )
 
-        self.trace = trace
         self.OTLPSpanExporter = OTLPSpan_exporter
 
