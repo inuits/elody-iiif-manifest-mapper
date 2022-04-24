@@ -1,20 +1,20 @@
 import logging
 import os
+from opentelemetry import trace
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
 import requests
 from flask import Flask
 from flask_restful import Api
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import MyResourceProtector, JWTValidator
-
-# OTel
 from otel.tracer import Tracer
-from opentelemetry.instrumentation.flask import FlaskInstrumentor
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 traceObject = Tracer("IIIF Manifest Mapper", __name__)
 traceObject.configTracer()
-traceObject.trace.get_tracer_provider().add_span_processor(
+trace.get_tracer_provider().add_span_processor(
     # SimpleSpanProcessor(ConsoleSpanExporter())
     BatchSpanProcessor(traceObject.OTLPSpanExporter)
 )
@@ -35,6 +35,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 FlaskInstrumentor().instrument_app(app)
+RequestsInstrumentor().instrument() 
 
 def iiif_available():
     return True, requests.get(f'{os.getenv("IIIF_BASE_URL")}{"/health"}').text
