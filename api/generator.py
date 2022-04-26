@@ -24,6 +24,13 @@ class ManifestGenerator:
         )
         self.license_mapping = {
             "CC0": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "CC0 1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "PUBLIEK DOMEIN": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "Public Domain Mark 1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "Public Domain": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "CC BY-NC-ND 4.0": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+            "CC-BY-NC-ND 4.0": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+            "CC-BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
             "In Copyright": "https://rightsstatements.org/page/InC/1.0/?language=en",
         }
 
