@@ -10,41 +10,14 @@ from flask import Flask
 from flask_restful import Api
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import MyResourceProtector, JWTValidator
-from otel.tracer import Tracer
+from inuits_otel_tracer.tracer import Tracer
 
 traceObject = Tracer("IIIF Manifest Mapper", __name__)
-traceObject.configTracer()
+traceObject.configTracer(isInsecure=True)
 trace.get_tracer_provider().add_span_processor(
     # SimpleSpanProcessor(ConsoleSpanExporter())
     BatchSpanProcessor(traceObject.OTLPSpanExporter)
 )
-
-
-# OTel
-from otel.tracer import Tracer
-from opentelemetry.instrumentation.flask import FlaskInstrumentor
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
-traceObject = Tracer("IIIF Manifest Mapper", __name__)
-traceObject.configTracer()
-traceObject.trace.get_tracer_provider().add_span_processor(
-    # SimpleSpanProcessor(ConsoleSpanExporter())
-    BatchSpanProcessor(traceObject.OTLPSpanExporter)
-)
-
-
-# OTel
-from otel.tracer import Tracer
-from opentelemetry.instrumentation.flask import FlaskInstrumentor
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
-traceObject = Tracer("IIIF Manifest Mapper", __name__)
-traceObject.configTracer()
-traceObject.trace.get_tracer_provider().add_span_processor(
-    # SimpleSpanProcessor(ConsoleSpanExporter())
-    BatchSpanProcessor(traceObject.OTLPSpanExporter)
-)
-
 
 app = Flask(__name__)
 
