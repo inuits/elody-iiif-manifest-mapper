@@ -6,6 +6,10 @@ from flask import Flask
 from flask_restful import Api
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import MyResourceProtector, JWTValidator
+from inuits_otel_tracer.tracer import Tracer
+
+traceObject = Tracer(os.getenv("OTEL_IS_DISABLED", True) in ["True" or "true" or True], "IIIF Manifest Mapper", __name__)
+traceObject.configTracer(endpoint = os.getenv("OTLP_EXPORTER_ENDPOINT", "otel-collector:4317"), isInsecure=True)
 
 app = Flask(__name__)
 
@@ -21,6 +25,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+traceObject.startAutoInstrumentation(app)
 
 def iiif_available():
     return True, requests.get(f'{os.getenv("IIIF_BASE_URL")}{"/health"}').text
