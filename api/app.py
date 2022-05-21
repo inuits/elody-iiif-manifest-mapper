@@ -8,7 +8,7 @@ from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import MyResourceProtector, JWTValidator
 from inuits_otel_tracer.tracer import Tracer
 
-traceObject = Tracer(os.getenv("OTEL_IS_DISABLED", True) in ["True" or "true" or True], "IIIF Manifest Mapper", __name__)
+traceObject = Tracer(os.getenv("OTEL_ENABLED", False) in ["True" or "true" or True], "IIIF Manifest Mapper", __name__)
 traceObject.configTracer(endpoint = os.getenv("OTLP_EXPORTER_ENDPOINT", "otel-collector:4317"), isInsecure=True)
 
 app = Flask(__name__)
