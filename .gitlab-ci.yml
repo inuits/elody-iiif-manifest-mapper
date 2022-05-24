@@ -7,10 +7,13 @@ include:
   - project: 'inuits/gitlab-ci/pipeline-templates'
     file: 'python-pipeline.yml'
     ref: 'v1.3.0'
+  - project: 'customers/coghent/infra/coghent-infra-gitlab-templates'
+    file    : 'npm-pipeline.yml'
+    ref     : 'master'
     
 variables:
   CUSTOMER: 'inuits'
-  APPLICATION: 'dams-iif-manifest-mapper'
+  APPLICATION: 'dams-iiif-manifest-mapper'
   TERRAFORM_IMAGE: 'dams-terraform'
   TERRAFORM_TAG: 'latest'
   SKIP_DEPLOY: 'true'
