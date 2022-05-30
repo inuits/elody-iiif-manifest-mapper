@@ -38,7 +38,7 @@ class ManifestGenerator:
         fac = ManifestFactory()
         fac.set_iiif_image_info(2.0, 2)
         fac.set_base_prezi_uri(self.prezi_base_url)
-        fac.set_base_image_uri(self.iiif_base_url + "/iiif/2/")
+        fac.set_base_image_uri(f"{self.iiif_base_url}/iiif/2/")
         return fac
 
     def __get_license_for_mediafile(self, license_name):
@@ -84,7 +84,9 @@ class ManifestGenerator:
                 entity["metadata"], "title", True
             )
             fac = self.__get_manifest_factory()
-            manifest = fac.manifest(ident=f"{self.prezi_base_url}/manifest/{entity_id}", label={lang: title})
+            manifest = fac.manifest(
+                ident=f"{self.prezi_base_url}/manifest/{entity_id}", label={lang: title}
+            )
             description = self.__get_metadata_value_with_key(
                 entity["metadata"], "description"
             )

@@ -24,8 +24,7 @@ class Manifest(Resource):
             return response
 
         try:
-            manifest = self.manifest_generator.generate_manifest(entity_id)
-            return manifest
+            return self.manifest_generator.generate_manifest(entity_id)
         except EntityDoesNotExist as ex:
             abort(404, message=str(ex))
         except NoMediafiles as ex:
