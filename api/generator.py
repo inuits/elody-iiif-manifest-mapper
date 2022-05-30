@@ -35,9 +35,7 @@ class ManifestGenerator:
         return fac
 
     def __get_license_for_mediafile(self, license_name):
-        if license_name in self.license_mapping:
-            return self.license_mapping[license_name]
-        return self.default_copyright_value
+        return self.license_mapping.get(license_name, self.default_copyright_value)
 
     def __get_metadata_value_with_key(self, metadata, key, include_lang=False):
         for item in metadata:
