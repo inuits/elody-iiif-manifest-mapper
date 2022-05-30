@@ -56,42 +56,37 @@ class ManifestGenerator:
             raise NoMediafiles("You don't have permission to access this resource")
 
     def generate_manifest(self, entity_id):
-        try:
-            entity = requests.get(
-                f"{self.collection_api_base_url}/entities/{entity_id}",
-                headers=self.headers,
-            ).json()
-            self.__check_entity(entity)
-            mediafiles = requests.get(
-                f"{self.collection_api_base_url}/entities/{entity_id}/mediafiles",
-                headers=self.headers,
-            ).json()
-            self.__check_mediafiles(mediafiles)
-            lang, title = self.__get_metadata_value_with_key(
-                entity["metadata"], "title", True
-            )
-            fac = self.__get_manifest_factory()
-            manifest = fac.manifest(
-                ident=f"{self.prezi_base_url}/manifest/{entity_id}", label={lang: title}
-            )
-            description = self.__get_metadata_value_with_key(
-                entity["metadata"], "description"
-            )
-            manifest.set_description(description)
-            manifest.rendering = {"@id": entity["data"]["@id"]}
-            seq = manifest.sequence()
-            for mediafile in mediafiles:
-                id = mediafile["original_file_location"].rsplit("/", 1)[1]
-                try:
-                    cvs = seq.canvas(ident=id, label=mediafile["filename"])
-                    image = cvs.set_image_annotation(id, iiif=True)
-                    image.license = self.__get_license_for_mediafile(
-                        self.__get_metadata_value_with_key(
-                            mediafile["metadata"], "rights"
-                        )
-                    )
-                except Exception:
-                    seq.canvases.remove(cvs)
-            return manifest.toJSON(top=True)
-        except Exception:
-            raise
+        entity = requests.get(
+            f"{self.collection_api_base_url}/entities/{entity_id}",
+            headers=self.headers,
+        ).json()
+        self.__check_entity(entity)
+        mediafiles = requests.get(
+            f"{self.collection_api_base_url}/entities/{entity_id}/mediafiles",
+            headers=self.headers,
+        ).json()
+        self.__check_mediafiles(mediafiles)
+        lang, title = self.__get_metadata_value_with_key(
+            entity["metadata"], "title", True
+        )
+        fac = self.__get_manifest_factory()
+        manifest = fac.manifest(
+            ident=f"{self.prezi_base_url}/manifest/{entity_id}", label={lang: title}
+        )
+        description = self.__get_metadata_value_with_key(
+            entity["metadata"], "description"
+        )
+        manifest.set_description(description)
+        manifest.rendering = {"@id": entity["data"]["@id"]}
+        seq = manifest.sequence()
+        for mediafile in mediafiles:
+            id = mediafile["original_file_location"].rsplit("/", 1)[1]
+            try:
+                cvs = seq.canvas(ident=id, label=mediafile["filename"])
+                image = cvs.set_image_annotation(id, iiif=True)
+                image.license = self.__get_license_for_mediafile(
+                    self.__get_metadata_value_with_key(mediafile["metadata"], "rights")
+                )
+            except Exception:
+                seq.canvases.remove(cvs)
+        return manifest.toJSON(top=True)
