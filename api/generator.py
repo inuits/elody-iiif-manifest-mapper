@@ -53,6 +53,11 @@ class ManifestGenerator:
         if not mediafiles or len(mediafiles) == 0:
             raise NoMediafiles("You don't have permission to access this resource")
 
+    def __get_mediafile_filename(self, mediafile):
+        if "transcode_filename" in mediafile:
+            return mediafile["transcode_filename"]
+        return mediafile["filename"]
+
     def generate_manifest(self, entity_id):
         entity = requests.get(
             f"{self.collection_api_base_url}/entities/{entity_id}",
@@ -78,13 +83,10 @@ class ManifestGenerator:
         manifest.rendering = {"@id": entity["data"]["@id"]}
         seq = manifest.sequence()
         for mediafile in mediafiles:
-            id = mediafile["original_file_location"].rsplit("/", 1)[1]
-            try:
-                cvs = seq.canvas(ident=id, label=mediafile["filename"])
-                image = cvs.set_image_annotation(id, iiif=True)
-                image.license = self.__get_license_for_mediafile(
-                    self.__get_metadata_value_with_key(mediafile["metadata"], "rights")
-                )
-            except Exception:
-                seq.canvases.remove(cvs)
+            ident = self.__get_mediafile_filename(mediafile)
+            cvs = seq.canvas(ident=ident, label=ident)
+            image = cvs.set_image_annotation(ident, iiif=True)
+            image.license = self.__get_license_for_mediafile(
+                self.__get_metadata_value_with_key(mediafile["metadata"], "rights")
+            )
         return manifest.toJSON(top=True)
