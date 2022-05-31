@@ -29,5 +29,6 @@ class Manifest(Resource):
             abort(404, message=str(ex))
         except NoMediafiles as ex:
             abort(403, message=str(ex))
-        except Exception:
+        except Exception as ex:
+            app.logger.error(f"Failed to generate manifest: {ex}")
             abort(500, message="Something went wrong while generating the manifest")
