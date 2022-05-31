@@ -37,12 +37,12 @@ class ManifestGenerator:
     def __get_license_for_mediafile(self, license_name):
         return self.license_mapping.get(license_name, self.default_copyright_value)
 
-    def __get_metadata_value_with_key(self, metadata, key, include_lang=False):
-        for item in metadata:
-            if item["key"] == key:
+    def __get_item_metadata_value(self, item, key, include_lang=False):
+        for entry in item["metadata"]:
+            if entry["key"] == key:
                 if include_lang:
-                    return item["lang"], item["value"]
-                return item["value"]
+                    return entry["lang"], entry["value"]
+                return entry["value"]
         return False
 
     def __check_entity(self, entity):
@@ -69,16 +69,12 @@ class ManifestGenerator:
             headers=self.headers,
         ).json()
         self.__check_mediafiles(mediafiles)
-        lang, title = self.__get_metadata_value_with_key(
-            entity["metadata"], "title", True
-        )
+        lang, title = self.__get_item_metadata_value(entity, "title", True)
         fac = self.__get_manifest_factory()
         manifest = fac.manifest(
             ident=f"{self.prezi_base_url}/manifest/{entity_id}", label={lang: title}
         )
-        description = self.__get_metadata_value_with_key(
-            entity["metadata"], "description"
-        )
+        description = self.__get_item_metadata_value(entity, "description")
         manifest.set_description(description)
         manifest.rendering = {"@id": entity["data"]["@id"]}
         seq = manifest.sequence()
@@ -87,6 +83,6 @@ class ManifestGenerator:
             cvs = seq.canvas(ident=ident, label=ident)
             image = cvs.set_image_annotation(ident, iiif=True)
             image.license = self.__get_license_for_mediafile(
-                self.__get_metadata_value_with_key(mediafile["metadata"], "rights")
+                self.__get_item_metadata_value(mediafile, "rights")
             )
         return manifest.toJSON(top=True)
