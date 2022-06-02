@@ -12,19 +12,19 @@ class ManifestGenerator:
         self.iiif_base_url = image_api_url
         self.prezi_base_url = presentation_api_url
         self.headers = {"Authorization": f"Bearer {static_jwt}"}
-        self.default_copyright_value = (
+        self.default_copyright = (
             "https://rightsstatements.org/page/InC/1.0/?language=en"
         )
         self.license_mapping = {
-            "CC0": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "CC0 1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "PUBLIEK DOMEIN": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "Public Domain Mark 1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "Public Domain": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "CC BY-NC 4.0": "https://creativecommons.org/licenses/by-nc/4.0/",
+            "CC BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
             "CC BY-NC-ND 4.0": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
-            "CC-BY-NC-ND 4.0": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
-            "CC-BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
-            "In Copyright": "https://rightsstatements.org/page/InC/1.0/?language=en",
+            "CC0 1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "Copyright Undetermined": "https://rightsstatements.org/page/UND/1.0/",
+            "In Copyright - non-commercial use permitted": "http://rightsstatements.org/vocab/InC-NC/1.0/",
+            "In Copyright - unknown rightsholder": "http://rightsstatements.org/vocab/InC-RUU/1.0/",
+            "In Copyright": "http://rightsstatements.org/vocab/InC/1.0/",
+            "Public Domain Mark 1.0": "https://creativecommons.org/publicdomain/mark/1.0/",
         }
 
     def __get_manifest_factory(self):
@@ -35,7 +35,7 @@ class ManifestGenerator:
         return fac
 
     def __get_license_for_mediafile(self, license_name):
-        return self.license_mapping.get(license_name, self.default_copyright_value)
+        return self.license_mapping.get(license_name, self.default_copyright)
 
     def __get_item_metadata_value(self, item, key, include_lang=False):
         for entry in item["metadata"]:
