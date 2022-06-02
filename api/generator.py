@@ -94,4 +94,5 @@ class ManifestGenerator:
             image.license = self.__get_license_for_mediafile(mediafile)
             image.attribution = self.__get_attribution_for_mediafile(mediafile)
             image.resource.id = image.resource.id.replace("http://", "https://")
+            image.resource.service.id = image.resource.service.id.replace("http://", "https://")
         return manifest.toJSON(top=True)
