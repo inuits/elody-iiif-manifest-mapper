@@ -85,4 +85,5 @@ class ManifestGenerator:
             image.license = self.__get_license_for_mediafile(
                 self.__get_item_metadata_value(mediafile, "rights")
             )
+            image.resource.id = image.resource.id.replace("http://", "https://")
         return manifest.toJSON(top=True)
