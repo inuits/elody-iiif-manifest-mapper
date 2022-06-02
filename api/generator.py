@@ -34,7 +34,8 @@ class ManifestGenerator:
         fac.set_base_image_uri(f"{self.iiif_base_url}/iiif/2/")
         return fac
 
-    def __get_license_for_mediafile(self, license_name):
+    def __get_license_for_mediafile(self, mediafile):
+        license_name = self.__get_item_metadata_value(mediafile, "rights")
         return self.license_mapping.get(license_name, self.default_copyright)
 
     def __get_item_metadata_value(self, item, key, include_lang=False):
@@ -57,6 +58,14 @@ class ManifestGenerator:
         if "transcode_filename" in mediafile:
             return mediafile["transcode_filename"]
         return mediafile["filename"]
+
+    def __get_attribution_for_mediafile(self, mediafile):
+        ret = self.__get_item_metadata_value(mediafile, "source")
+        if photographer := self.__get_item_metadata_value(mediafile, "photographer"):
+            ret = f"{photographer} - {ret}"
+        if rights_holder := self.__get_item_metadata_value(mediafile, "copyright"):
+            ret = f"{rights_holder} - {ret}"
+        return ret
 
     def generate_manifest(self, entity_id):
         entity = requests.get(
@@ -82,8 +91,7 @@ class ManifestGenerator:
             ident = self.__get_mediafile_filename(mediafile)
             cvs = seq.canvas(ident=ident, label=ident)
             image = cvs.set_image_annotation(ident, iiif=True)
-            image.license = self.__get_license_for_mediafile(
-                self.__get_item_metadata_value(mediafile, "rights")
-            )
+            image.license = self.__get_license_for_mediafile(mediafile)
+            image.attribution = self.__get_attribution_for_mediafile(mediafile)
             image.resource.id = image.resource.id.replace("http://", "https://")
         return manifest.toJSON(top=True)
