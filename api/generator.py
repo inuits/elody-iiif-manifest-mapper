@@ -60,11 +60,11 @@ class ManifestGenerator:
         return mediafile["filename"]
 
     def __get_attribution_for_mediafile(self, mediafile):
-        ret = self.__get_item_metadata_value(mediafile, "source")
+        ret = f'source: {self.__get_item_metadata_value(mediafile, "source")}'
         if photographer := self.__get_item_metadata_value(mediafile, "photographer"):
-            ret = f"{photographer} - {ret}"
+            ret = f"photographer: {photographer}, {ret}"
         if rights_holder := self.__get_item_metadata_value(mediafile, "copyright"):
-            ret = f"{rights_holder} - {ret}"
+            ret = f"rightsholder: {rights_holder}, {ret}"
         return ret
 
     def generate_manifest(self, entity_id):
