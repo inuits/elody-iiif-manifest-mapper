@@ -45,6 +45,7 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 require_oauth = MyResourceProtector(
+    logger,
     os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
 )
 validator = JWTValidator(
