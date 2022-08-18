@@ -18,7 +18,7 @@ traceObject.configTracer(
 )
 
 app = Flask(__name__)
-
+api = Api(app)
 app.config.update(
     {"SECRET_KEY": "SomethingNotEntirelySecret", "TESTING": True, "DEBUG": True}
 )
@@ -28,21 +28,9 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
     level=logging.INFO,
 )
-
 logger = logging.getLogger(__name__)
 
 traceObject.startAutoInstrumentation(app)
-
-
-def iiif_available():
-    return True, requests.get(f'{os.getenv("IIIF_BASE_URL")}/health').text
-
-
-health = HealthCheck()
-if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
-    health.add_check(iiif_available)
-
-app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 require_oauth = MyResourceProtector(
     logger,
@@ -59,7 +47,16 @@ validator = JWTValidator(
 )
 require_oauth.register_token_validator(validator)
 
-api = Api(app)
+
+def iiif_available():
+    return True, requests.get(f'{os.getenv("IIIF_BASE_URL")}/health').text
+
+
+health = HealthCheck()
+if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
+    health.add_check(iiif_available)
+
+app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 from resources.manifest import Manifest
 

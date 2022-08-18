@@ -13,7 +13,7 @@ class Manifest(Resource):
             os.getenv("COLLECTION_API_BASE_URL"),
             os.getenv("IIIF_BASE_URL"),
             os.getenv("PREZI_BASE_URL"),
-            os.getenv("STATIC_JWT", "None"),
+            os.getenv("STATIC_JWT"),
         )
 
     @app.require_oauth("get-manifest")
