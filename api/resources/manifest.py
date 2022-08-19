@@ -10,9 +10,10 @@ from generator import ManifestGenerator
 class Manifest(Resource):
     def __init__(self):
         self.manifest_generator = ManifestGenerator(
-            os.getenv("COLLECTION_API_BASE_URL"),
-            os.getenv("IIIF_BASE_URL"),
-            os.getenv("PREZI_BASE_URL"),
+            os.getenv("COLLECTION_API_URL"),
+            os.getenv("IMAGE_API_URL"),
+            os.getenv("IMAGE_API_URL_EXT"),
+            os.getenv("PRESENTATION_API_URL"),
             os.getenv("STATIC_JWT"),
         )
 

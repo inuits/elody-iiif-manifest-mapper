@@ -6,10 +6,16 @@ from iiif_prezi.factory import ManifestFactory
 
 class ManifestGenerator:
     def __init__(
-        self, collection_api_url, image_api_url, presentation_api_url, static_jwt
+        self,
+        collection_api_url,
+        image_api_url,
+        image_api_url_ext,
+        presentation_api_url,
+        static_jwt,
     ):
         self.collection_api_url = collection_api_url
         self.image_api_url = image_api_url
+        self.image_api_url_ext = image_api_url_ext
         self.presentation_api_url = presentation_api_url
         self.headers = {"Authorization": f"Bearer {static_jwt}"}
 

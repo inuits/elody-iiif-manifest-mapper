@@ -49,7 +49,7 @@ require_oauth.register_token_validator(validator)
 
 
 def iiif_available():
-    return True, requests.get(f'{os.getenv("IIIF_BASE_URL")}/health').text
+    return True, requests.get(f'{os.getenv("IMAGE_API_URL")}/health').text
 
 
 health = HealthCheck()
