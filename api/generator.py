@@ -25,9 +25,11 @@ class ManifestGenerator:
         image = cvs.set_image_annotation(ident, iiif=True)
         image.license = self.__get_license_for_mediafile(mediafile)
         image.attribution = self.__get_attribution_for_mediafile(mediafile)
-        image.resource.id = image.resource.id.replace("http://", "https://")
+        image.resource.id = image.resource.id.replace(
+            self.image_api_url, self.image_api_url_ext
+        )
         image.resource.service.id = image.resource.service.id.replace(
-            "http://", "https://"
+            self.image_api_url, self.image_api_url_ext
         )
 
     def __check_entity(self, entity):
