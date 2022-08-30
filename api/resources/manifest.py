@@ -22,13 +22,11 @@ class Manifest(Resource):
         @after_this_request
         def add_header(response):
             response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Content-Type"] = "application/ld+json"
             return response
 
         try:
-            return Response(
-                self.manifest_generator.generate_manifest(entity_id),
-                mimetype="application/ld+json",
-            )
+            return self.manifest_generator.generate_manifest(entity_id)
         except EntityDoesNotExist as ex:
             abort(404, message=str(ex))
         except NoMediafiles as ex:
