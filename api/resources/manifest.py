@@ -3,7 +3,7 @@ import os
 
 from exceptions import EntityDoesNotExist, NoMediafiles
 from flask_restful import Resource, abort
-from flask import after_this_request
+from flask import after_this_request, Response
 from generator import ManifestGenerator
 
 
@@ -25,7 +25,10 @@ class Manifest(Resource):
             return response
 
         try:
-            return self.manifest_generator.generate_manifest(entity_id)
+            return Response(
+                self.manifest_generator.generate_manifest(entity_id),
+                mimetype="application/ld+json",
+            )
         except EntityDoesNotExist as ex:
             abort(404, message=str(ex))
         except NoMediafiles as ex:
