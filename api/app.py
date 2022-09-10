@@ -1,15 +1,17 @@
 import logging
 import os
 import requests
+import sentry_sdk
 
 from flask import Flask
 from flask_restful import Api
 from healthcheck import HealthCheck
-from inuits_jwt_auth.authorization import MyResourceProtector, JWTValidator
+from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 from inuits_otel_tracer.tracer import Tracer
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 traceObject = Tracer(
-    os.getenv("OTEL_ENABLED", False) in ["True" or "true" or True],
+    os.getenv("OTEL_ENABLED", False) in ["True", "true", True],
     "IIIF Manifest Mapper",
     __name__,
 )
@@ -17,10 +19,17 @@ traceObject.configTracer(
     endpoint=os.getenv("OTLP_EXPORTER_ENDPOINT", "otel-collector:4317"), isInsecure=True
 )
 
+if os.getenv("SENTRY_ENABLED", False):
+    sentry_sdk.init(dsn=os.getenv("SENTRY_DSN"), integrations=[FlaskIntegration()])
+
 app = Flask(__name__)
 api = Api(app)
 app.config.update(
-    {"SECRET_KEY": "SomethingNotEntirelySecret", "TESTING": True, "DEBUG": True}
+    {
+        "SECRET_KEY": "SomethingNotEntirelySecret",
+        "TESTING": True,
+        "DEBUG": True,
+    }
 )
 
 logging.basicConfig(
@@ -34,7 +43,7 @@ traceObject.startAutoInstrumentation(app)
 
 require_oauth = MyResourceProtector(
     logger,
-    os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
+    os.getenv("REQUIRE_TOKEN", True) in ["True", "true", True],
 )
 validator = JWTValidator(
     logger,
@@ -44,6 +53,7 @@ validator = JWTValidator(
     os.getenv("ROLE_PERMISSION_FILE", "role_permission.json"),
     os.getenv("SUPER_ADMIN_ROLE", "role_super_admin"),
     os.getenv("REMOTE_TOKEN_VALIDATION", False),
+    os.getenv("REMOTE_PUBLIC_KEY", False),
 )
 require_oauth.register_token_validator(validator)
 
@@ -61,3 +71,13 @@ app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 from resources.manifest import Manifest
 
 api.add_resource(Manifest, "/manifest/<string:entity_id>")
+
+
+@app.after_request
+def add_header(response):
+    response.headers["Jaeger-trace-id"] = os.getenv("JAEGER_TRACE_ID", "default-id")
+    return response
+
+
+if __name__ == "__main__":
+    app.run(debug=True)

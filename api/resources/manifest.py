@@ -2,8 +2,8 @@ import app
 import os
 
 from exceptions import EntityDoesNotExist, NoMediafiles
+from flask import after_this_request
 from flask_restful import Resource, abort
-from flask import after_this_request, Response
 from generator import ManifestGenerator
 
 
