@@ -64,12 +64,5 @@ from resources.manifest import Manifest
 
 api.add_resource(Manifest, "/manifest/<string:entity_id>")
 
-
-@app.after_request
-def add_header(response):
-    response.headers["Jaeger-trace-id"] = os.getenv("JAEGER_TRACE_ID", "default-id")
-    return response
-
-
 if __name__ == "__main__":
     app.run(debug=True)
