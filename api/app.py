@@ -1,15 +1,16 @@
 import logging
 import os
 import requests
-import sentry_sdk
 
 from flask import Flask
 from flask_restful import Api
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
-from sentry_sdk.integrations.flask import FlaskIntegration
 
 if os.getenv("SENTRY_ENABLED", False):
+    import sentry_sdk
+    from sentry_sdk.integrations.flask import FlaskIntegration
+
     sentry_sdk.init(
         dsn=os.getenv("SENTRY_DSN"),
         integrations=[FlaskIntegration()],
