@@ -22,7 +22,8 @@ class Manifest(Resource):
         @after_this_request
         def add_header(response):
             response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Content-Type"] = "application/ld+json"
+            if response.status_code == 200:
+                response.headers["Content-Type"] = "application/ld+json"
             return response
 
         try:
