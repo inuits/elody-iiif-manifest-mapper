@@ -20,7 +20,7 @@ class ManifestGenerator:
         self.headers = {"Authorization": f"Bearer {static_jwt}"}
 
     def __add_canvas_to_sequence(self, seq, mediafile):
-        ident = self.__get_mediafile_filename(mediafile)
+        ident = mediafile.get("transcode_filename", mediafile["filename"])
         cvs = seq.canvas(ident=ident, label=ident)
         image = cvs.set_image_annotation(ident, iiif=True)
         image.license = self.__get_license_for_mediafile(mediafile)
@@ -32,14 +32,6 @@ class ManifestGenerator:
             self.image_api_url, self.image_api_url_ext
         )
 
-    def __check_entity(self, entity):
-        if "message" in entity and "metadata" not in entity:
-            raise EntityDoesNotExist(entity["message"])
-
-    def __check_mediafiles(self, mediafiles):
-        if not mediafiles or len(mediafiles) == 0:
-            raise NoMediafiles("You don't have permission to access this resource")
-
     def __get_attribution_for_mediafile(self, mediafile):
         ret = f'source: {self.__get_item_metadata_value(mediafile, "source")}'
         if photographer := self.__get_item_metadata_value(mediafile, "photographer"):
@@ -48,10 +40,13 @@ class ManifestGenerator:
             ret = f"rightsholder: {rights_holder}, {ret}"
         return ret
 
-    def __get_from_collection_api(self, endpoint):
-        return requests.get(
-            f"{self.collection_api_url}{endpoint}", headers=self.headers
-        ).json()
+    def __get_from_collection_api(self, endpoint, entity=False, mediafiles=False):
+        req = requests.get(f"{self.collection_api_url}{endpoint}", headers=self.headers)
+        if entity and req.status_code == 404:
+            raise EntityDoesNotExist(req.json()["message"])
+        elif mediafiles and not len(req.json()):
+            raise NoMediafiles("You don't have permission to access this resource")
+        return req.json()
 
     def __get_item_metadata_value(self, item, key, include_lang=False):
         for entry in [x for x in item["metadata"] if x["key"] == key]:
@@ -86,16 +81,11 @@ class ManifestGenerator:
         )
         return fac
 
-    def __get_mediafile_filename(self, mediafile):
-        if "transcode_filename" in mediafile:
-            return mediafile["transcode_filename"]
-        return mediafile["filename"]
-
     def generate_manifest(self, entity_id):
-        entity = self.__get_from_collection_api(f"/entities/{entity_id}")
-        self.__check_entity(entity)
-        mediafiles = self.__get_from_collection_api(f"/entities/{entity_id}/mediafiles")
-        self.__check_mediafiles(mediafiles)
+        entity = self.__get_from_collection_api(f"/entities/{entity_id}", entity=True)
+        mediafiles = self.__get_from_collection_api(
+            f"/entities/{entity_id}/mediafiles", mediafiles=True
+        )
         lang, title = self.__get_item_metadata_value(entity, "title", True)
         fac = self.__get_manifest_factory()
         manifest = fac.manifest(
