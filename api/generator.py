@@ -57,8 +57,8 @@ class ManifestGenerator:
         license_name = self.__get_item_metadata_value(mediafile, "rights")
         return {
             "CC BY-NC 4.0": "https://creativecommons.org/licenses/by-nc/4.0/",
-            "CC BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
             "CC BY-NC-ND 4.0": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+            "CC BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
             "CC0 1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
             "Copyright Undetermined": "https://rightsstatements.org/page/UND/1.0/",
             "In Copyright - non-commercial use permitted": "http://rightsstatements.org/vocab/InC-NC/1.0/",
