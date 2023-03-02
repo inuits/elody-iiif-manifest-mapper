@@ -7,7 +7,7 @@ from flask_restful import Api
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 
-if os.getenv("SENTRY_ENABLED", False):
+if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
     from sentry_sdk.integrations.flask import FlaskIntegration
 
