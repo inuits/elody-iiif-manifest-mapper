@@ -1,5 +1,4 @@
 import app
-import os
 
 from exceptions import EntityDoesNotExist, NoMediafiles
 from flask import after_this_request
@@ -8,15 +7,6 @@ from generator import ManifestGenerator
 
 
 class Manifest(Resource):
-    def __init__(self):
-        self.manifest_generator = ManifestGenerator(
-            os.getenv("COLLECTION_API_URL"),
-            os.getenv("IMAGE_API_URL"),
-            os.getenv("IMAGE_API_URL_EXT"),
-            os.getenv("PRESENTATION_API_URL"),
-            os.getenv("STATIC_JWT"),
-        )
-
     @app.require_oauth("get-manifest")
     def get(self, entity_id):
         @after_this_request
@@ -27,7 +17,7 @@ class Manifest(Resource):
             return response
 
         try:
-            return self.manifest_generator.generate_manifest(entity_id)
+            return ManifestGenerator().generate_manifest(entity_id)
         except EntityDoesNotExist as ex:
             abort(404, message=str(ex))
         except NoMediafiles as ex:

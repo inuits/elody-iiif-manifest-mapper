@@ -1,23 +1,26 @@
+import os
 import requests
 
 from exceptions import EntityDoesNotExist, NoMediafiles
 from iiif_prezi.factory import ManifestFactory
 
 
-class ManifestGenerator:
-    def __init__(
-        self,
-        collection_api_url,
-        image_api_url,
-        image_api_url_ext,
-        presentation_api_url,
-        static_jwt,
-    ):
-        self.collection_api_url = collection_api_url
-        self.image_api_url = image_api_url
-        self.image_api_url_ext = image_api_url_ext
-        self.presentation_api_url = presentation_api_url
-        self.headers = {"Authorization": f"Bearer {static_jwt}"}
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class ManifestGenerator(metaclass=Singleton):
+    def __init__(self):
+        self.collection_api_url = os.getenv("COLLECTION_API_URL")
+        self.image_api_url = os.getenv("IMAGE_API_URL")
+        self.image_api_url_ext = os.getenv("IMAGE_API_URL_EXT")
+        self.presentation_api_url = os.getenv("PRESENTATION_API_URL")
+        self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
 
     def __add_canvas_to_sequence(self, seq, mediafile):
         ident = mediafile.get("transcode_filename", mediafile["filename"])
