@@ -6,6 +6,8 @@ from flask import Flask
 from flask_restful import Api
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
+from inuits_policy_based_auth import PolicyFactory
+from policy_loader import load_policies
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
@@ -49,6 +51,9 @@ validator = JWTValidator(
     os.getenv("REMOTE_PUBLIC_KEY", False),
 )
 require_oauth.register_token_validator(validator)
+
+policy_factory = PolicyFactory(logger)
+load_policies(policy_factory)
 
 
 def iiif_available():

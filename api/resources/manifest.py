@@ -1,13 +1,13 @@
-import app
-
+from app import policy_factory, logger
 from exceptions import EntityDoesNotExist, NoMediafiles
-from flask import after_this_request
+from flask import request, after_this_request
 from flask_restful import Resource, abort
 from generator import ManifestGenerator
+from inuits_policy_based_auth import RequestContext
 
 
 class Manifest(Resource):
-    @app.require_oauth("get-manifest")
+    @policy_factory.apply_policies(RequestContext(request, ["get-manifest"]))
     def get(self, entity_id):
         @after_this_request
         def add_header(response):
@@ -23,5 +23,5 @@ class Manifest(Resource):
         except NoMediafiles as ex:
             abort(403, message=str(ex))
         except Exception as ex:
-            app.logger.error(f"Failed to generate manifest: {ex}")
+            logger.error(f"Failed to generate manifest: {ex}")
             abort(500, message="Something went wrong while generating the manifest")
