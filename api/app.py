@@ -19,13 +19,7 @@ if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
 
 app = Flask(__name__)
 api = Api(app)
-app.config.update(
-    {
-        "SECRET_KEY": "SomethingNotEntirelySecret",
-        "TESTING": True,
-        "DEBUG": True,
-    }
-)
+app.config.update({"SECRET_KEY": "SomethingNotEntirelySecret"})
 
 logging.basicConfig(
     format="%(asctime)s %(process)d,%(threadName)s %(filename)s:%(lineno)d [%(levelname)s] %(message)s",
@@ -66,4 +60,4 @@ from resources.manifest import Manifest
 api.add_resource(Manifest, "/manifest/<string:entity_id>")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
