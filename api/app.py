@@ -1,6 +1,7 @@
 import logging
 import os
 import requests
+import secrets
 
 from flask import Flask
 from flask_restful import Api
@@ -19,7 +20,7 @@ if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
 
 app = Flask(__name__)
 api = Api(app)
-app.config.update({"SECRET_KEY": "SomethingNotEntirelySecret"})
+app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(16))
 
 logging.basicConfig(
     format="%(asctime)s %(process)d,%(threadName)s %(filename)s:%(lineno)d [%(levelname)s] %(message)s",
