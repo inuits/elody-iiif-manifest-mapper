@@ -27,4 +27,4 @@ requests==2.30.0
 sentry-sdk[flask]==0.10.2
 six==1.16.0
 urllib3==1.26.15
-Werkzeug==2.3.3
+Werkzeug==2.3.4
