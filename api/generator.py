@@ -75,12 +75,12 @@ class ManifestGenerator(metaclass=Singleton):
         fac.set_iiif_image_info(2.0, 2)
         fac.set_base_prezi_uri(self.presentation_api_url)
         fac.set_base_image_uri(f"{self.image_api_url}/iiif/2/")
-        fac.context_uri = fac.context_uri.replace("http://", "https:///")
+        fac.context_uri = fac.context_uri.replace("http://", "https://")
         fac.default_image_api_profile = fac.default_image_api_profile.replace(
-            "http://", "https:///"
+            "http://", "https://"
         )
         fac.default_image_api_context = fac.default_image_api_context.replace(
-            "http://", "https:///"
+            "http://", "https://"
         )
         return fac
 
