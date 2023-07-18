@@ -10,7 +10,7 @@ cryptography==41.0.2
 Flask==2.3.2
 Flask-RESTful==0.3.10
 frozendict==2.3.8
-gunicorn==20.1.0
+gunicorn==21.0.1
 idna==3.4
 iiif-prezi==0.3.0
 inuits-jwt-auth==2.0.2
