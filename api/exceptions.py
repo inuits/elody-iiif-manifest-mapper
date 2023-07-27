@@ -4,3 +4,7 @@ class EntityDoesNotExist(Exception):
 
 class NoMediafiles(Exception):
     pass
+
+
+class InvalidVersion(Exception):
+    pass
