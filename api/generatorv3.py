@@ -5,7 +5,7 @@ import json
 
 
 from exceptions import EntityDoesNotExist, NoMediafiles
-from iiif_prezi3 import Manifest, config
+from iiif_prezi3 import Manifest, KeyValueString
 
 class Singleton(type):
     _instances = {}
@@ -26,20 +26,30 @@ class ManifestGeneratorv3(metaclass=Singleton):
     def __add_canvas_to_manifest(self, manifest, mediafile):
         id = mediafile.get("transcode_filename", mediafile["filename"])
 
+        source = self.__get_item_metadata_value(mediafile, "source")
+        image_url = self.image_api_url_ext + "/iiif/3/" + id
         canvas = manifest.make_canvas(
             id=self.presentation_api_url + "canvas/" + id + ".json",
             label=id,
+            rights=self.__get_license_for_mediafile(mediafile),
+            requiredStatement=KeyValueString(
+                label="Attribution",
+                value=source
+            ),
             height=mediafile["img_height"],
             width=mediafile["img_width"],
         )
 
         canvas.add_image(
-            image_url=self.image_api_url_ext + "/iiif/3/" + id,
+            image_url=image_url,
             height=mediafile["img_height"],
             width=mediafile["img_width"],
             anno_page_id="https://annotationpageLink?",
             anno_id="https://annotationLink",
-            rights=self.__get_license_for_mediafile(mediafile)
+            thumbnail={
+                "id": f'{image_url}/full/{mediafile["img_width"]},{mediafile["img_height"]}/0/default.jpg',
+                "type": mediafile["mimetype"]
+            },
         )
 
     def __get_from_collection_api(self, endpoint, entity=False, mediafiles=False):
