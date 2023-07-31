@@ -17,7 +17,6 @@ class Manifest(Resource):
             return response
 
         try:
-            app.logger.info("start")
             if version == 2:
                 return ManifestGenerator().generate_manifest(entity_id)
             elif version == 3:
