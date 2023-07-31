@@ -32,11 +32,9 @@ class BaseGenerator(metaclass=Singleton):
     def _get_from_collection_api(self, endpoint, entity=False, mediafiles=False):
         req = requests.get(f"{self.collection_api_url}{endpoint}", headers=self.headers)
         if entity and req.status_code == 404:
-            raise NotFoundException(req.json()["message"])
+            raise NotFoundException()
         elif mediafiles and not len(req.json()):
-            raise NoMediafilesException(
-                "You don't have permission to access this resource"
-            )
+            raise NoMediafilesException()
         return req.json()
 
     def _get_item_metadata_value(self, item, key, include_lang=False):

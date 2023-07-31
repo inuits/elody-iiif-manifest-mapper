@@ -25,13 +25,13 @@ class Manifest(Resource):
             if not generator:
                 raise UnsupportedVersionException()
             generator().generate_manifest(entity_id)
-        except NoMediafilesException as ex:
+        except NoMediafilesException:
             abort(
-                403, message=f"Asset with id {entity_id} has no accessible mediafiles."
+                403, message=f"Entity with id {entity_id} has no accessible mediafiles."
             )
-        except NotFoundException as ex:
-            abort(404, message=str(ex))
-        except UnsupportedVersionException as ex:
+        except NotFoundException:
+            abort(404, message=f"Entity with id {entity_id} not found.")
+        except UnsupportedVersionException:
             abort(
                 400,
                 message=f"Version {version} is not supported. Only version 2 & 3 are currently supported.",
