@@ -3,6 +3,7 @@ import json
 from base_generator import BaseGenerator
 from iiif_prezi3 import Manifest, KeyValueString
 
+
 class ManifestGeneratorv3(BaseGenerator):
     def __add_canvas_to_manifest(self, manifest, mediafile):
         id = mediafile.get("transcode_filename", mediafile["filename"])

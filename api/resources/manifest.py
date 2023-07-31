@@ -1,6 +1,10 @@
 import app
 
-from exceptions import EntityDoesNotExist, InvalidVersion, NoMediafiles
+from elody.exceptions import (
+    NoMediafilesException,
+    NotFoundException,
+    UnsupportedVersionException,
+)
 from flask import after_this_request
 from flask_restful import Resource, abort
 from generator import ManifestGenerator
@@ -17,18 +21,22 @@ class Manifest(Resource):
             return response
 
         try:
-            if version == 2:
-                return ManifestGenerator().generate_manifest(entity_id)
-            elif version == 3:
-                return ManifestGeneratorv3().generate_manifest(entity_id)
-            else:
-                raise InvalidVersion("Only version 2 and 3 are supported.")
-        except EntityDoesNotExist as ex:
+            generator = {2: ManifestGenerator, 3: ManifestGeneratorv3}.get(version)
+            if not generator:
+                raise UnsupportedVersionException()
+            generator().generate_manifest(entity_id)
+        except NoMediafilesException as ex:
+            abort(
+                403, message=f"Asset with id {entity_id} has no accessible mediafiles."
+            )
+        except NotFoundException as ex:
             abort(404, message=str(ex))
-        except InvalidVersion as ex:
-            abort(400, message=str(ex))
-        except NoMediafiles as ex:
-            abort(403, message=str(ex))
+        except UnsupportedVersionException as ex:
+            abort(
+                400,
+                message=f"Version {version} is not supported. Only version 2 & 3 are currently supported.",
+            )
         except Exception as ex:
-            app.logger.error(f"Failed to generate manifest: {ex}")
-            abort(500, message="Something went wrong while generating the manifest")
+            message = f"Failed to generate manifest: {ex}"
+            app.logger.error(message)
+            abort(500, message=message)

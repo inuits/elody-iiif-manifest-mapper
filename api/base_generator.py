@@ -1,7 +1,8 @@
 import os
 import requests
 
-from exceptions import EntityDoesNotExist, NoMediafiles
+from elody.exceptions import NotFoundException, NoMediafilesException
+
 
 class Singleton(type):
     _instances = {}
@@ -10,6 +11,7 @@ class Singleton(type):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+
 
 class BaseGenerator(metaclass=Singleton):
     def __init__(self):
@@ -30,9 +32,11 @@ class BaseGenerator(metaclass=Singleton):
     def _get_from_collection_api(self, endpoint, entity=False, mediafiles=False):
         req = requests.get(f"{self.collection_api_url}{endpoint}", headers=self.headers)
         if entity and req.status_code == 404:
-            raise EntityDoesNotExist(req.json()["message"])
+            raise NotFoundException(req.json()["message"])
         elif mediafiles and not len(req.json()):
-            raise NoMediafiles("You don't have permission to access this resource")
+            raise NoMediafilesException(
+                "You don't have permission to access this resource"
+            )
         return req.json()
 
     def _get_item_metadata_value(self, item, key, include_lang=False):
