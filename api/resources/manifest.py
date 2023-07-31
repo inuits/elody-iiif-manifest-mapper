@@ -1,10 +1,11 @@
 import app
 
-from exceptions import EntityDoesNotExist, NoMediafiles, InvalidVersion
+from exceptions import EntityDoesNotExist, InvalidVersion, NoMediafiles
 from flask import after_this_request
 from flask_restful import Resource, abort
 from generator import ManifestGenerator
 from generatorv3 import ManifestGeneratorv3
+
 
 class Manifest(Resource):
     def get(self, entity_id, version=2):
@@ -22,7 +23,7 @@ class Manifest(Resource):
             elif version == 3:
                 return ManifestGeneratorv3().generate_manifest(entity_id)
             else:
-                raise InvalidVersion('Only version 2 and 3 are supported.')
+                raise InvalidVersion("Only version 2 and 3 are supported.")
         except EntityDoesNotExist as ex:
             abort(404, message=str(ex))
         except InvalidVersion as ex:

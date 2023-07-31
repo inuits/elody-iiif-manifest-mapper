@@ -11,7 +11,6 @@ class Singleton(type):
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
-
 class BaseGenerator(metaclass=Singleton):
     def __init__(self):
         self.collection_api_url = os.getenv("COLLECTION_API_URL")
@@ -19,6 +18,15 @@ class BaseGenerator(metaclass=Singleton):
         self.image_api_url_ext = os.getenv("IMAGE_API_URL_EXT")
         self.presentation_api_url = os.getenv("PRESENTATION_API_URL")
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
+
+    def _get_attribution_for_mediafile(self, mediafile):
+        ret = f'source: {self._get_item_metadata_value(mediafile, "source")}'
+        if photographer := self._get_item_metadata_value(mediafile, "photographer"):
+            ret = f"photographer: {photographer}, {ret}"
+        if rights_holder := self._get_item_metadata_value(mediafile, "copyright"):
+            ret = f"rightsholder: {rights_holder}, {ret}"
+        return ret
+
     def _get_from_collection_api(self, endpoint, entity=False, mediafiles=False):
         req = requests.get(f"{self.collection_api_url}{endpoint}", headers=self.headers)
         if entity and req.status_code == 404:
@@ -45,11 +53,3 @@ class BaseGenerator(metaclass=Singleton):
             "In Copyright": "http://rightsstatements.org/vocab/InC/1.0/",
             "Public Domain Mark 1.0": "https://creativecommons.org/publicdomain/mark/1.0/",
         }.get(license_name, "https://rightsstatements.org/page/InC/1.0/?language=en")
-
-    def _get_attribution_for_mediafile(self, mediafile):
-        ret = f'source: {self._get_item_metadata_value(mediafile, "source")}'
-        if photographer := self._get_item_metadata_value(mediafile, "photographer"):
-            ret = f"photographer: {photographer}, {ret}"
-        if rights_holder := self._get_item_metadata_value(mediafile, "copyright"):
-            ret = f"rightsholder: {rights_holder}, {ret}"
-        return ret

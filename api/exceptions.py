@@ -2,9 +2,9 @@ class EntityDoesNotExist(Exception):
     pass
 
 
-class NoMediafiles(Exception):
+class InvalidVersion(Exception):
     pass
 
 
-class InvalidVersion(Exception):
+class NoMediafiles(Exception):
     pass

@@ -58,7 +58,11 @@ app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 from resources.manifest import Manifest
 
-api.add_resource(Manifest, "/manifest/<string:entity_id>", "/manifest/<string:entity_id>/<int:version>")
+api.add_resource(
+    Manifest,
+    "/manifest/<string:entity_id>",
+    "/manifest/<string:entity_id>/<int:version>",
+)
 
 if __name__ == "__main__":
     app.run()
