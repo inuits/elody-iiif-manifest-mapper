@@ -6,13 +6,13 @@
 include:
   - project: 'inuits/gitlab-ci/pipeline-templates'
     file: 'pip-pipeline.yml'
-    ref: 'v1.7.0'
+    ref: 'v1.7.1'
   - project: 'rnd/inuits/dams/pipeline-deploy-targets'
     file: 'deployment-targets.yml'
     ref: 'master'
 
 variables:
-  CUSTOMER: 'inuits'
   APPLICATION: 'dams-iiif-manifest-mapper'
-  SKIP_DEPLOY: 'true'
+  CUSTOMER: 'inuits'
+
   TARGETS: 'coghent,digipolis-dams'
