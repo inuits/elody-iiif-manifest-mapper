@@ -32,4 +32,4 @@ sentry-sdk[flask]==0.10.2
 six==1.16.0
 typing-extensions==4.7.1
 urllib3==1.26.16
-Werkzeug==2.3.6
+Werkzeug==2.3.7
