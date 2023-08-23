@@ -7,7 +7,7 @@ cffi==1.15.1
 charset-normalizer==3.2.0
 click==8.1.7
 cryptography==41.0.3
-elody==0.0.16
+elody==0.0.17
 Flask==2.3.3
 Flask-RESTful==0.3.10
 frozendict==2.3.8
