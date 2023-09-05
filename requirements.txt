@@ -26,7 +26,7 @@ py-healthcheck==1.10.1
 pycparser==2.21
 pydantic==1.10.12
 PyLD==2.0.3
-pytz==2023.3
+pytz==2023.3.post1
 requests==2.31.0
 sentry-sdk[flask]==0.10.2
 six==1.16.0
