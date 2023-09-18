@@ -7,7 +7,7 @@ cffi==1.15.1
 charset-normalizer==3.2.0
 click==8.1.7
 cryptography==41.0.3
-elody==0.0.17
+elody==0.0.19
 Flask==2.3.3
 Flask-RESTful==0.3.10
 frozendict==2.3.8
@@ -30,6 +30,6 @@ pytz==2023.3.post1
 requests==2.31.0
 sentry-sdk[flask]==0.10.2
 six==1.16.0
-typing-extensions==4.7.1
+typing-extensions==4.8.0
 urllib3==1.26.16
 Werkzeug==2.3.7
