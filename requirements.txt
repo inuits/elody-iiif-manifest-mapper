@@ -4,10 +4,10 @@ blinker==1.6.3
 cachetools==5.3.1
 certifi==2023.7.22
 cffi==1.16.0
-charset-normalizer==3.3.0
+charset-normalizer==3.3.1
 click==8.1.7
 cryptography==41.0.4
-elody==0.0.29
+elody==0.0.30
 Flask==3.0.0
 Flask-RESTful==0.3.10
 frozendict==2.3.8
