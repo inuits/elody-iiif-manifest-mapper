@@ -6,7 +6,7 @@ from iiif_prezi3 import Manifest, KeyValueString
 
 class ManifestGeneratorv3(BaseGenerator):
     def __add_canvas_to_manifest(self, manifest, mediafile):
-        id = mediafile.get("transcode_filename", mediafile["filename"])
+        id = mediafile.get("transcode_identifier", mediafile["identifier"])
         source = self._get_item_metadata_value(mediafile, "source")
         image_url = self.image_api_url_ext + "/iiif/3/" + id
         canvas = manifest.make_canvas(

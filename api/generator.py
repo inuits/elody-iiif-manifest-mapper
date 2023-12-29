@@ -4,7 +4,7 @@ from iiif_prezi.factory import ManifestFactory
 
 class ManifestGenerator(BaseGenerator):
     def __add_canvas_to_sequence(self, seq, mediafile):
-        ident = mediafile.get("transcode_filename", mediafile["filename"])
+        ident = mediafile.get("transcode_identifier", mediafile["identifier"])
         cvs = seq.canvas(ident=ident, label=ident)
         image = cvs.set_image_annotation(ident, iiif=True)
         image.license = self._get_license_for_mediafile(mediafile)
