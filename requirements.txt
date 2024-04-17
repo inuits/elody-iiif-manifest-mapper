@@ -8,7 +8,7 @@ elody==0.0.61
 Flask==3.0.1
 Flask-RESTful==0.3.10
 frozendict==2.4.0
-gunicorn==21.2.0
+gunicorn==22.0.0
 idna==3.6
 iiif-prezi==0.3.0
 iiif-prezi3==1.2.1
