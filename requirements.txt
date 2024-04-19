@@ -5,7 +5,7 @@ certifi==2023.11.17
 charset-normalizer==3.3.2
 click==8.1.7
 elody==0.0.61
-Flask==3.0.1
+Flask==3.0.3
 Flask-RESTful==0.3.10
 frozendict==2.4.2
 gunicorn==22.0.0
