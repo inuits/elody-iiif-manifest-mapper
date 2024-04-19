@@ -1,7 +1,7 @@
 aniso8601==9.0.1
 blinker==1.7.0
 cachetools==5.3.3
-certifi==2023.11.17
+certifi==2024.2.2
 charset-normalizer==3.3.2
 click==8.1.7
 elody==0.0.61
