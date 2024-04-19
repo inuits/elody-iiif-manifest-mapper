@@ -21,7 +21,7 @@ Pillow==9.5.0
 py-healthcheck==1.10.1
 pydantic==1.10.15
 PyLD==2.0.4
-pytz==2023.4
+pytz==2024.1
 requests==2.31.0
 sentry-sdk[flask]==1.45.0
 six==1.16.0
