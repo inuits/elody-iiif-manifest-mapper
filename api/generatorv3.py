@@ -37,8 +37,12 @@ class ManifestGeneratorv3(BaseGenerator):
             label={lang: [title]},
             summary={lang: [description]},
             rendering={
-                "id": entity.get("data", dict()).get("@id", f"{self.presentation_api_url}/manifest/{entity_id}"),
-                "type": entity.get("data", dict()).get("@type", entity.get("type", "asset")),
+                "id": entity.get("data", dict()).get(
+                    "@id", f"{self.collection_api_url}/entities/{entity_id}"
+                ),
+                "type": entity.get("data", dict()).get(
+                    "@type", entity.get("type", "asset")
+                ),
                 "label": {lang: [title]},
             },
         )
