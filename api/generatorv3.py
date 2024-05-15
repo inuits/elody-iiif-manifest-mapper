@@ -13,14 +13,10 @@ class ManifestGeneratorv3(BaseGenerator):
             id=self.presentation_api_url + "canvas/" + id + ".json",
             label=id,
             rights=self._get_license_for_mediafile(mediafile),
-            requiredStatement=KeyValueString(label="Attribution", value=source),
-            height=mediafile["img_height"],
-            width=mediafile["img_width"],
+            requiredStatement=KeyValueString(label="Attribution", value=source if source else ""),
         )
         canvas.add_image(
             image_url=image_url,
-            height=mediafile["img_height"],
-            width=mediafile["img_width"],
             anno_page_id="https://annotationpageLink?",
             anno_id="https://annotationLink",
             thumbnail={
@@ -41,11 +37,11 @@ class ManifestGeneratorv3(BaseGenerator):
             label={lang: [title]},
             summary={lang: [description]},
             rendering={
-                "id": entity["data"]["@id"],
-                "type": entity["data"]["@type"],
+                "id": entity.get("data", dict()).get("@id", f"{self.presentation_api_url}/manifest/{entity_id}"),
+                "type": entity.get("data", dict()).get("@type", entity.get("type", "asset")),
                 "label": {lang: [title]},
             },
         )
-        for mediafile in mediafiles:
+        for mediafile in mediafiles.get("results"):
             self.__add_canvas_to_manifest(manifest, mediafile)
         return json.loads(manifest.json())
