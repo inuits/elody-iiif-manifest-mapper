@@ -13,7 +13,9 @@ class ManifestGeneratorv3(BaseGenerator):
             id=self.presentation_api_url + "canvas/" + id + ".json",
             label=id,
             rights=self._get_license_for_mediafile(mediafile),
-            requiredStatement=KeyValueString(label="Attribution", value=source if source else ""),
+            requiredStatement=KeyValueString(
+                label="Attribution", value=source if source else ""
+            ),
         )
         canvas.add_image(
             image_url=image_url,
