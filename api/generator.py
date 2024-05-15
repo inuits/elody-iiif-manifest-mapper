@@ -35,8 +35,8 @@ class ManifestGenerator(BaseGenerator):
             label={lang: title},
         )
         manifest.set_description(self._get_item_metadata_value(entity, "description"))
-        manifest.rendering = {"@id": entity["data"]["@id"]}
+        manifest.rendering = {"@id": entity.get("data", dict()).get("@id", entity_id)}
         seq = manifest.sequence()
-        for mediafile in mediafiles:
+        for mediafile in mediafiles.get("results"):
             self.__add_canvas_to_sequence(seq, mediafile)
         return manifest.toJSON(top=True)
