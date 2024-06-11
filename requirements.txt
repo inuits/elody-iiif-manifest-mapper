@@ -19,7 +19,7 @@ MarkupSafe==2.1.5
 packaging==24.0
 Pillow==9.5.0
 py-healthcheck==1.10.1
-pydantic==1.10.15
+pydantic==1.10.16
 PyLD==2.0.4
 pytz==2024.1
 requests==2.31.0
