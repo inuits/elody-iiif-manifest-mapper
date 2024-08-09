@@ -2,10 +2,14 @@ import json
 
 from base_generator import BaseGenerator
 from iiif_prezi3 import Manifest, KeyValueString
+from elody.exceptions import NoMediafilesException
 
 
 class ManifestGeneratorv3(BaseGenerator):
     def __add_canvas_to_manifest(self, manifest, mediafile):
+        back_office_mediafile = self._get_item_metadata_value(mediafile, "back_office")
+        if back_office_mediafile:
+            return False
         id = mediafile.get("transcode_filename", mediafile["filename"])
         source = self._get_item_metadata_value(mediafile, "source")
         image_url = self.image_api_url_ext + "/iiif/3/" + id
@@ -26,6 +30,7 @@ class ManifestGeneratorv3(BaseGenerator):
                 "type": mediafile["mimetype"],
             },
         )
+        return True
 
     def generate_manifest(self, entity_id):
         entity = self._get_from_collection_api(f"/entities/{entity_id}", entity=True)
@@ -48,6 +53,15 @@ class ManifestGeneratorv3(BaseGenerator):
                 "label": {lang: [title]},
             },
         )
+
+        any_non_back_office_mediafile_added = False
         for mediafile in mediafiles.get("results"):
-            self.__add_canvas_to_manifest(manifest, mediafile)
+            if self.__add_canvas_to_manifest(manifest, mediafile):
+                any_non_back_office_mediafile_added = True
+
+        if not any_non_back_office_mediafile_added:
+            raise NoMediafilesException(
+                f"Entity with id {entity_id} has no accessible mediafiles."
+            )
+
         return json.loads(manifest.json())
