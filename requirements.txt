@@ -14,7 +14,7 @@ iiif-prezi==0.3.0
 iiif-prezi3==1.2.1
 itsdangerous==2.2.0
 Jinja2==3.1.4
-lxml==5.2.2
+lxml==5.3.0
 MarkupSafe==2.1.5
 packaging==24.1
 Pillow==9.5.0
