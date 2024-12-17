@@ -47,8 +47,7 @@ class ManifestGenerator(BaseGenerator):
         }
         seq = manifest.sequence()
         any_non_back_office_mediafile_added = False
-        for mediafile in mediafiles.get("results"):
-            raise Exception(f"{mediafiles} --- {mediafiles.get('results')} --- {mediafile}")
+        for mediafile in mediafiles.get("results", []):
             if self.__add_canvas_to_sequence(seq, mediafile):
                 any_non_back_office_mediafile_added = True
 
