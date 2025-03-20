@@ -8,7 +8,10 @@ from elody.exceptions import NoMediafilesException
 class ManifestGeneratorv3(BaseGenerator):
     def __add_canvas_to_manifest(self, manifest, mediafile):
         back_office_mediafile = self._get_item_metadata_value(mediafile, "back_office")
-        if back_office_mediafile:
+        publication_status_mediafile = self._get_item_metadata_value(
+            mediafile, "publication_status"
+        )
+        if back_office_mediafile or publication_status_mediafile != "publiek":
             return False
         id = mediafile.get("transcode_filename", mediafile["filename"])
         source = self._get_item_metadata_value(mediafile, "source")
@@ -54,12 +57,12 @@ class ManifestGeneratorv3(BaseGenerator):
             },
         )
 
-        any_non_back_office_mediafile_added = False
-        for mediafile in mediafiles.get("results"):
+        any_mediafile_added = False
+        for mediafile in mediafiles.get("results", []):
             if self.__add_canvas_to_manifest(manifest, mediafile):
-                any_non_back_office_mediafile_added = True
+                any_mediafile_added = True
 
-        if not any_non_back_office_mediafile_added:
+        if not any_mediafile_added:
             raise NoMediafilesException(
                 f"Entity with id {entity_id} has no accessible mediafiles."
             )
