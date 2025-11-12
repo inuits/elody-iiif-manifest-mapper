@@ -7,12 +7,6 @@ from elody.exceptions import NoMediafilesException
 
 class ManifestGeneratorv3(BaseGenerator):
     def __add_canvas_to_manifest(self, manifest, mediafile):
-        back_office_mediafile = self._get_item_metadata_value(mediafile, "back_office")
-        publication_status_mediafile = self._get_item_metadata_value(
-            mediafile, "publication_status"
-        )
-        if back_office_mediafile or publication_status_mediafile != "publiek":
-            return False
         id = mediafile.get("transcode_filename", mediafile["filename"])
         source = self._get_item_metadata_value(mediafile, "source")
         image_url = self.image_api_url_ext + "/iiif/3/" + id
@@ -40,12 +34,12 @@ class ManifestGeneratorv3(BaseGenerator):
         mediafiles = self._get_from_collection_api(
             f"/entities/{entity_id}/mediafiles", mediafiles=True
         )
-        lang, title = self._get_item_metadata_value(entity, "title", True)
+        title = self._get_item_metadata_value(entity, "title", False)
         description = self._get_item_metadata_value(entity, "description")
         manifest = Manifest(
             id=f"{self.presentation_api_url}/manifest/{entity_id}",
-            label={lang: [title]},
-            summary={lang: [description]},
+            label=title,
+            summary=description,
             rendering={
                 "id": entity.get("data", dict()).get(
                     "@id", f"{self.collection_api_url}/entities/{entity_id}"
@@ -53,7 +47,7 @@ class ManifestGeneratorv3(BaseGenerator):
                 "type": entity.get("data", dict()).get(
                     "@type", entity.get("type", "asset")
                 ),
-                "label": {lang: [title]},
+                "label": title,
             },
         )
 

@@ -5,12 +5,6 @@ from elody.exceptions import NoMediafilesException
 
 class ManifestGenerator(BaseGenerator):
     def __add_canvas_to_sequence(self, seq, mediafile):
-        back_office_mediafile = self._get_item_metadata_value(mediafile, "back_office")
-        publication_status_mediafile = self._get_item_metadata_value(
-            mediafile, "publication_status"
-        )
-        if back_office_mediafile or publication_status_mediafile != "publiek":
-            return False
         ident = mediafile.get("transcode_filename", mediafile["filename"])
         cvs = seq.canvas(ident=ident, label=ident)
         image = cvs.set_image_annotation(ident, iiif=True)
@@ -36,11 +30,11 @@ class ManifestGenerator(BaseGenerator):
         mediafiles = self._get_from_collection_api(
             f"/entities/{entity_id}/mediafiles", mediafiles=True
         )
-        lang, title = self._get_item_metadata_value(entity, "title", True)
+        title = self._get_item_metadata_value(entity, "title", False)
         fac = self.__get_manifest_factory()
         manifest = fac.manifest(
             ident=f"{self.presentation_api_url}/manifest/{entity_id}",
-            label={lang: title},
+            label=title,
         )
         manifest.set_description(self._get_item_metadata_value(entity, "description"))
         manifest.rendering = {
