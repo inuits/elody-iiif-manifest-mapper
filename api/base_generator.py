@@ -19,7 +19,7 @@ class BaseGenerator(metaclass=Singleton):
         self.image_api_url = os.getenv("IMAGE_API_URL")
         self.image_api_url_ext = os.getenv("IMAGE_API_URL_EXT")
         self.presentation_api_url = os.getenv("PRESENTATION_API_URL")
-        self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
+        self.headers = {}
 
     def _get_attribution_for_mediafile(self, mediafile):
         ret = f'source: {self._get_item_metadata_value(mediafile, "source")}'
@@ -38,7 +38,7 @@ class BaseGenerator(metaclass=Singleton):
         return req.json()
 
     def _get_item_metadata_value(self, item, key, include_lang=False):
-        for entry in [x for x in item["metadata"] if x["key"] == key]:
+        for entry in [x for x in item.get("metadata", []) if x["key"] == key]:
             return (entry["lang"], entry["value"]) if include_lang else entry["value"]
         return None
 
