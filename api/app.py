@@ -45,6 +45,8 @@ api.add_resource(
     Manifest,
     "/manifest/<string:entity_id>",
     "/manifest/<string:entity_id>/<int:version>",
+    "/iiif/<string:entity_id>/manifest",
+    "/iiif/<string:entity_id>/manifest/<int:version>",
 )
 
 if __name__ == "__main__":
