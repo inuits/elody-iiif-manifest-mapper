@@ -43,8 +43,8 @@ from resources.manifest import Manifest
 
 api.add_resource(
     Manifest,
-    "/iiif/<string:entity_id>/manifest",
-    "/iiif/<string:entity_id>/manifest/<int:version>",
+    "/manifest/<string:entity_id>",
+    "/manifest/<string:entity_id>/<int:version>",
 )
 
 if __name__ == "__main__":
