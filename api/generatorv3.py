@@ -3,6 +3,7 @@ import json
 from base_generator import BaseGenerator
 from iiif_prezi3 import Manifest, KeyValueString
 from elody.exceptions import NoMediafilesException
+import re
 
 
 class ManifestGeneratorv3(BaseGenerator):
@@ -29,6 +30,12 @@ class ManifestGeneratorv3(BaseGenerator):
         )
         return True
 
+    def __check_valid_identifier(self, mediafile):
+        ident = mediafile.get("transcode_filename", mediafile["filename"])
+        if not re.match(r"^[^-]{32}-.*$", ident):
+            return False
+        return True
+
     def generate_manifest(self, entity_id):
         entity = self._get_from_collection_api(f"/entities/{entity_id}", entity=True)
         mediafiles = self._get_from_collection_api(
@@ -53,6 +60,8 @@ class ManifestGeneratorv3(BaseGenerator):
 
         any_mediafile_added = False
         for mediafile in mediafiles.get("results", []):
+            if not self.__check_valid_identifier(mediafile):
+                continue
             if self.__add_canvas_to_manifest(manifest, mediafile):
                 any_mediafile_added = True
 
