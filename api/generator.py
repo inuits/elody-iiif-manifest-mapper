@@ -1,6 +1,7 @@
 from base_generator import BaseGenerator
 from iiif_prezi.factory import ManifestFactory
 from elody.exceptions import NoMediafilesException
+import re
 
 
 class ManifestGenerator(BaseGenerator):
@@ -16,6 +17,12 @@ class ManifestGenerator(BaseGenerator):
         image.resource.service.id = image.resource.service.id.replace(
             self.image_api_url, self.image_api_url_ext
         )
+        return True
+
+    def __check_valid_identifier(self, mediafile):
+        ident = mediafile.get("transcode_filename", mediafile["filename"])
+        if not re.match(r"^[^-]{32}-.*$", ident):
+            return False
         return True
 
     def __get_manifest_factory(self):
@@ -45,6 +52,8 @@ class ManifestGenerator(BaseGenerator):
         seq = manifest.sequence()
         any_mediafile_added = False
         for mediafile in mediafiles.get("results", []):
+            if not self.__check_valid_identifier(mediafile):
+                continue
             if self.__add_canvas_to_sequence(seq, mediafile):
                 any_mediafile_added = True
 
