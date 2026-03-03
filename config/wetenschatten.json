@@ -1,0 +1,33 @@
+{
+  "name": "Wetenschatten",
+  "description": "4 eeuwen kustonderzoek in Beeld",
+  "iiifVersion": 3,
+  "rightsUri": "http://creativecommons.org/licenses/by-nc-sa/4.0/",
+  "attribution": "Vlaams Instituut voor de Zee (VLIZ)",
+  "baseUrl": "http://localhost:8080",
+
+  "traversalSteps": [
+    {
+      "relationType": "hasContext",
+      "mapsToIIIF": "Collection",
+      "order": 1,
+      "includeThumbnails": true,
+      "inverse": true,
+      "targetType": "album"
+    },
+    {
+      "relationType": "hasAlbum",
+      "mapsToIIIF": "Manifest",
+      "order": 2,
+      "inverse": true,
+      "targetType": "media"
+    }
+  ],
+
+  "metadataMappings": [
+    {"elodyKey": "title", "iiifProperty": "label", "language": "nl"},
+    {"elodyKey": "description", "iiifProperty": "summary", "language": "nl"},
+    {"elodyKey": "creator", "iiifProperty": "Maker", "language": "nl"},
+    {"elodyKey": "date", "iiifProperty": "Datum", "language": "nl"}
+  ]
+}

@@ -57,11 +57,25 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 from resources.manifest import Manifest
+from resources.collection import Collection
+from resources.configurable_manifest import ConfigurableManifest
 
 api.add_resource(
     Manifest,
     "/manifest/<string:entity_id>",
     "/manifest/<string:entity_id>/<int:version>",
+)
+
+api.add_resource(
+    Collection,
+    "/collection/<string:root_entity_id>",
+    "/collection/<string:root_entity_id>/<string:config_entity_id>",
+)
+
+# New configurable manifest endpoint (same pattern as collection)
+api.add_resource(
+    ConfigurableManifest,
+    "/iiif/manifest/<string:entity_id>",
 )
 
 if __name__ == "__main__":
