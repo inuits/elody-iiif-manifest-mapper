@@ -64,6 +64,7 @@ class Collection(Resource):
         # Parse optional query parameters
         depth = request.args.get("depth", type=int)
         config_file = request.args.get("config_file", type=str)
+        image_base_url = request.args.get("image_base_url", type=str)
 
         return self._generate(
             root_entity_id=root_entity_id,
@@ -71,6 +72,7 @@ class Collection(Resource):
             config_file=config_file,
             config_dict=None,
             depth=depth,
+            image_base_url=image_base_url,
         )
 
     def post(
@@ -121,6 +123,7 @@ class Collection(Resource):
         config_file: str = None,
         config_dict: dict = None,
         depth: int = None,
+        image_base_url: str = None,
     ):
         """Internal method to generate collection."""
         # Copy authorization header from request
@@ -135,6 +138,7 @@ class Collection(Resource):
                 config_file=config_file,
                 config_dict=config_dict,
                 depth=depth,
+                image_base_url=image_base_url,
             )
 
             return collection, 200, {

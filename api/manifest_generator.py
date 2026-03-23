@@ -7,6 +7,7 @@ mappings to be defined via JSON config.
 """
 
 import logging
+import re
 from typing import Optional
 
 from base_generator import BaseGenerator
@@ -26,12 +27,14 @@ class ConfigurableManifestGenerator(BaseGenerator):
     def __init__(self):
         super().__init__()
         self._config: Optional[CollectionConfig] = None
+        self._image_base_url: Optional[str] = None  # Override for image URLs (e.g. dashboard proxy)
 
     def generate_manifest(
         self,
         entity_id: str,
         config_file: Optional[str] = None,
         config_dict: Optional[dict] = None,
+        image_base_url: Optional[str] = None,
     ) -> dict:
         """
         Generate an IIIF v3 Manifest from an Elody entity.
@@ -44,6 +47,9 @@ class ConfigurableManifestGenerator(BaseGenerator):
         Returns:
             IIIF v3 Manifest as a dictionary
         """
+        # Store image base URL override (e.g. dashboard proxy URL)
+        self._image_base_url = image_base_url.rstrip("/") if image_base_url else None
+
         # Load config (dict > file > default)
         if config_dict:
             self._config = CollectionConfig.from_dict(config_dict)
@@ -55,11 +61,25 @@ class ConfigurableManifestGenerator(BaseGenerator):
         # Fetch entity
         entity = self._get_from_collection_api(f"/entities/{entity_id}", entity=True)
 
-        # Get mediafiles for this entity
-        mediafiles = self._get_mediafiles_for_entity(entity)
+        # If entity is a mediafile, use it directly as single canvas
+        parent_entity = None
+        if entity.get("type") == "mediafile":
+            mediafiles = [entity]
+            # Look up parent media entity for inherited metadata
+            for rel in entity.get("relations", []):
+                if rel.get("type") == "belongsTo":
+                    try:
+                        parent_entity = self._get_from_collection_api(
+                            f"/entities/{rel['key']}", entity=True
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch parent entity {rel['key']}: {e}")
+                    break
+        else:
+            mediafiles = self._get_mediafiles_for_entity(entity)
 
         # Build manifest
-        manifest = self._build_manifest(entity, mediafiles)
+        manifest = self._build_manifest(entity, mediafiles, parent_entity=parent_entity)
 
         return manifest
 
@@ -71,26 +91,34 @@ class ConfigurableManifestGenerator(BaseGenerator):
             metadata_mappings=DEFAULT_METADATA_MAPPINGS,
         )
 
-    def _build_manifest(self, entity: dict, mediafiles: list[dict]) -> dict:
+    def _build_manifest(
+        self, entity: dict, mediafiles: list[dict], parent_entity: dict = None
+    ) -> dict:
         """
         Build an IIIF v3 Manifest from an entity and its mediafiles.
 
         Args:
             entity: The Elody entity
             mediafiles: List of mediafile entities
+            parent_entity: Optional parent entity for inherited metadata
 
         Returns:
             IIIF v3 Manifest as dictionary
         """
         entity_id = entity.get("_id") or entity.get("id")
 
-        # Extract metadata using mappings
-        label = self._extract_mapped_value(entity, "label") or f"Item {entity_id}"
-        summary = self._extract_mapped_value(entity, "summary")
+        # Extract metadata using mappings (pass first mediafile for mediafile-source mappings)
+        first_mediafile = mediafiles[0] if mediafiles else None
+        label = self._extract_mapped_value(entity, "label", first_mediafile) or f"Item {entity_id}"
+        summary = self._extract_mapped_value(entity, "summary", first_mediafile)
 
-        # Build manifest ID (strip trailing slashes from base URL)
+        # Build manifest ID using /iiif/manifest/ endpoint (strip trailing slashes from base URL)
+        # Include image_base_url so runtime fetches (e.g. Clover viewer) also get proxied image URLs
         base_url = self.presentation_api_url.rstrip("/")
-        manifest_id = f"{base_url}/manifest/{entity_id}"
+        manifest_id = f"{base_url}/iiif/manifest/{entity_id}"
+        if self._image_base_url:
+            from urllib.parse import quote
+            manifest_id += f"?image_base_url={quote(self._image_base_url, safe='')}"
 
         # Create manifest structure
         manifest = {
@@ -117,8 +145,11 @@ class ConfigurableManifestGenerator(BaseGenerator):
                 ),
             }
 
-        # Add custom metadata fields
-        metadata_items = self._build_metadata(entity)
+        # Add custom metadata fields (pass first mediafile for mediafile-source mappings)
+        first_mediafile = mediafiles[0] if mediafiles else None
+        metadata_items = self._build_metadata(
+            entity, mediafile=first_mediafile, parent_entity=parent_entity
+        )
         if metadata_items:
             manifest["metadata"] = metadata_items
 
@@ -179,8 +210,9 @@ class ConfigurableManifestGenerator(BaseGenerator):
         else:
             width, height = 1000, 1000
 
-        # Build image URL
-        image_url = f"{self.image_api_url_ext}/iiif/3/{filename}"
+        # Build image URL (use override if set, e.g. for dashboard proxy)
+        image_base = self._image_base_url or self.image_api_url_ext
+        image_url = f"{image_base}/iiif/3/{filename}"
 
         # Build canvas URL (strip trailing slashes from base URL)
         base_url = self.presentation_api_url.rstrip("/")
@@ -233,7 +265,12 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         return canvas
 
-    def _build_metadata(self, entity: dict) -> list[dict]:
+    def _build_metadata(
+        self,
+        entity: dict,
+        mediafile: Optional[dict] = None,
+        parent_entity: Optional[dict] = None,
+    ) -> list[dict]:
         """
         Build IIIF metadata array from entity using configured mappings.
 
@@ -242,31 +279,123 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         Args:
             entity: The entity to extract metadata from
+            mediafile: Optional first mediafile for mediafile-source mappings
+            parent_entity: Optional parent entity for source="parent" mappings
 
         Returns:
             List of IIIF metadata objects
         """
         metadata_items = []
+        seen = set()  # (iiif_property, value) for deduplication
         skip_properties = {"label", "summary", "rights", "attribution"}
 
         for mapping in self._config.metadata_mappings:
             if mapping.iiif_property.lower() in skip_properties:
                 continue
 
-            value = self._get_entity_metadata_value(entity, mapping.elody_key)
-            if value:
-                metadata_items.append({
-                    "label": self._make_language_map(
-                        mapping.iiif_property,
-                        mapping.language or "nl"
-                    ),
-                    "value": self._make_language_map(
-                        value,
-                        mapping.language or "nl"
-                    ),
-                })
+            lang = mapping.language or "nl"
+
+            if mapping.source == "parent" and parent_entity:
+                if mapping.relation_type:
+                    values = self._get_relation_metadata_values(
+                        parent_entity, mapping.relation_type, mapping.related_key
+                    )
+                    for value in values:
+                        dedup_key = (mapping.iiif_property, value)
+                        if dedup_key in seen:
+                            continue
+                        seen.add(dedup_key)
+                        metadata_items.append({
+                            "label": self._make_language_map(mapping.iiif_property, lang),
+                            "value": self._make_language_map(value, lang),
+                        })
+                elif mapping.elody_key:
+                    value = self._get_entity_metadata_value(parent_entity, mapping.elody_key)
+                    if value:
+                        vals = value if isinstance(value, list) else [value]
+                        for v in vals:
+                            # Apply regex extraction if configured
+                            extracted = str(v)
+                            if mapping.regex:
+                                match = re.search(mapping.regex, extracted)
+                                if match:
+                                    extracted = match.group(1)
+                                else:
+                                    continue  # Skip if regex doesn't match
+                            dedup_key = (mapping.iiif_property, extracted)
+                            if dedup_key in seen:
+                                continue
+                            seen.add(dedup_key)
+                            metadata_items.append({
+                                "label": self._make_language_map(mapping.iiif_property, lang),
+                                "value": self._make_language_map(extracted, lang),
+                            })
+            elif mapping.source == "relation":
+                values = self._get_relation_metadata_values(
+                    entity, mapping.relation_type, mapping.related_key
+                )
+                for value in values:
+                    metadata_items.append({
+                        "label": self._make_language_map(mapping.iiif_property, lang),
+                        "value": self._make_language_map(value, lang),
+                    })
+            elif mapping.source == "mediafile" and mediafile:
+                value = self._get_entity_metadata_value(mediafile, mapping.elody_key)
+                if value:
+                    metadata_items.append({
+                        "label": self._make_language_map(mapping.iiif_property, lang),
+                        "value": self._make_language_map(value, lang),
+                    })
+            else:
+                value = self._get_entity_metadata_value(entity, mapping.elody_key)
+                if value:
+                    if isinstance(value, list):
+                        for v in value:
+                            metadata_items.append({
+                                "label": self._make_language_map(mapping.iiif_property, lang),
+                                "value": self._make_language_map(str(v), lang),
+                            })
+                    else:
+                        metadata_items.append({
+                            "label": self._make_language_map(mapping.iiif_property, lang),
+                            "value": self._make_language_map(str(value), lang),
+                        })
 
         return metadata_items
+
+    def _get_relation_metadata_values(
+        self, entity: dict, relation_type: str, related_key: str
+    ) -> list[str]:
+        """
+        Get metadata values from related entities.
+
+        Args:
+            entity: The source entity containing relations
+            relation_type: The relation type to match (e.g., "hasCreator")
+            related_key: The metadata key to extract from related entities
+
+        Returns:
+            List of metadata values from matching related entities
+        """
+        values = []
+        for relation in entity.get("relations", []):
+            if relation.get("type") != relation_type:
+                continue
+            related_id = relation.get("key")
+            if not related_id:
+                continue
+            try:
+                related_entity = self._get_from_collection_api(
+                    f"/entities/{related_id}", entity=True
+                )
+                value = self._get_entity_metadata_value(related_entity, related_key)
+                if value:
+                    values.append(value)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to fetch related entity {related_id}: {e}"
+                )
+        return values
 
     def _get_mediafiles_for_entity(self, entity: dict) -> list[dict]:
         """
@@ -347,21 +476,35 @@ class ConfigurableManifestGenerator(BaseGenerator):
         """Get thumbnail object from a mediafile."""
         filename = self._get_mediafile_filename(mediafile)
         if filename:
+            image_base = self._image_base_url or self.image_api_url_ext
             return {
-                "id": f"{self.image_api_url_ext}/iiif/3/{filename}/full/200,/0/default.jpg",
+                "id": f"{image_base}/iiif/3/{filename}/full/200,/0/default.jpg",
                 "type": "Image",
                 "format": "image/jpeg",
             }
         return None
 
-    def _extract_mapped_value(self, entity: dict, iiif_property: str) -> Optional[str]:
-        """Extract a value from entity using configured mappings."""
+    def _extract_mapped_value(
+        self, entity: dict, iiif_property: str, mediafile: Optional[dict] = None
+    ) -> Optional[str]:
+        """Extract a value from entity (or mediafile) using configured mappings."""
         # First try configured mappings
         for mapping in self._config.metadata_mappings:
             if mapping.iiif_property.lower() == iiif_property.lower():
-                value = self._get_entity_metadata_value(entity, mapping.elody_key)
-                if value:
-                    return value
+                if mapping.source == "relation":
+                    values = self._get_relation_metadata_values(
+                        entity, mapping.relation_type, mapping.related_key
+                    )
+                    if values:
+                        return values[0]
+                elif mapping.source == "mediafile" and mediafile:
+                    value = self._get_entity_metadata_value(mediafile, mapping.elody_key)
+                    if value:
+                        return value
+                else:
+                    value = self._get_entity_metadata_value(entity, mapping.elody_key)
+                    if value:
+                        return value
 
         # Fall back to default mappings
         for mapping in DEFAULT_METADATA_MAPPINGS:

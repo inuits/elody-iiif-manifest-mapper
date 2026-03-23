@@ -6,6 +6,7 @@ graphs and generates IIIF Presentation API v3 Collection resources.
 """
 
 import logging
+import re
 from typing import Optional
 
 from base_generator import BaseGenerator
@@ -30,6 +31,7 @@ class CollectionGenerator(BaseGenerator):
         super().__init__()
         self._config: Optional[CollectionConfig] = None
         self._config_file: Optional[str] = None  # Track config file for manifest URLs
+        self._image_base_url: Optional[str] = None  # Override for image URLs (e.g. dashboard proxy)
 
     def generate_collection(
         self,
@@ -38,6 +40,7 @@ class CollectionGenerator(BaseGenerator):
         config_file: Optional[str] = None,
         config_dict: Optional[dict] = None,
         depth: Optional[int] = None,
+        image_base_url: Optional[str] = None,
     ) -> dict:
         """
         Generate an IIIF v3 Collection from an Elody entity.
@@ -57,6 +60,8 @@ class CollectionGenerator(BaseGenerator):
         """
         # Store config file name for use in manifest URLs
         self._config_file = config_file
+        # Store image base URL override (e.g. dashboard proxy URL)
+        self._image_base_url = image_base_url.rstrip("/") if image_base_url else None
 
         # Fetch configuration (dict > file > entity > default)
         if config_dict:
@@ -213,8 +218,17 @@ class CollectionGenerator(BaseGenerator):
         rights = self._extract_mapped_value(entity, "rights")
 
         # Build collection ID (strip trailing slashes from base URL)
+        # Include config_file and image_base_url so Canopy can re-fetch sub-collections
         base_url = self.presentation_api_url.rstrip("/")
         collection_id = f"{base_url}/collection/{entity_id}"
+        query_params = []
+        if self._config_file:
+            query_params.append(f"config_file={self._config_file}")
+        if self._image_base_url:
+            from urllib.parse import quote
+            query_params.append(f"image_base_url={quote(self._image_base_url, safe='')}")
+        if query_params:
+            collection_id += "?" + "&".join(query_params)
 
         # Create collection structure
         collection = {
@@ -300,6 +314,12 @@ class CollectionGenerator(BaseGenerator):
                 entity, step.relation_type
             )
 
+        # For mediafile manifest references, pre-resolve parent metadata once
+        # (relation lookups like hasCreator are expensive per-item)
+        cached_parent_metadata = None
+        if step.maps_to_iiif == "Manifest" and step.target_type == "mediafile":
+            cached_parent_metadata = self._build_parent_only_metadata(entity)
+
         for related_entity in related_entities:
             if step.maps_to_iiif == "Collection":
                 # Recursively build sub-collection
@@ -314,7 +334,10 @@ class CollectionGenerator(BaseGenerator):
 
             elif step.maps_to_iiif == "Manifest":
                 # Create manifest reference
-                manifest_ref = self._make_manifest_reference(related_entity)
+                manifest_ref = self._make_manifest_reference(
+                    related_entity,
+                    cached_parent_metadata=cached_parent_metadata,
+                )
                 items.append(manifest_ref)
 
         return items
@@ -335,18 +358,30 @@ class CollectionGenerator(BaseGenerator):
 
         return ref
 
-    def _make_manifest_reference(self, entity: dict) -> dict:
-        """Create a reference to a manifest for an entity."""
+    def _make_manifest_reference(
+        self, entity: dict, parent_entity: dict = None,
+        cached_parent_metadata: list = None,
+    ) -> dict:
+        """Create a reference to a manifest for an entity.
+
+        Includes metadata from configured mappings so that Canopy can index
+        facets directly from the collection response without fetching each
+        manifest individually.
+        """
         entity_id = entity.get("_id") or entity.get("id")
         label = self._extract_mapped_value(entity, "label") or f"Item {entity_id}"
 
         # Build manifest URL - use configurable endpoint with config_file if available
         base_url = self.presentation_api_url.rstrip("/")
+        manifest_url = f"{base_url}/iiif/manifest/{entity_id}"
+        query_params = []
         if self._config_file:
-            manifest_url = f"{base_url}/iiif/manifest/{entity_id}?config_file={self._config_file}"
-        else:
-            # Fall back to standard manifest endpoint
-            manifest_url = f"{base_url}/iiif/manifest/{entity_id}"
+            query_params.append(f"config_file={self._config_file}")
+        if self._image_base_url:
+            from urllib.parse import quote
+            query_params.append(f"image_base_url={quote(self._image_base_url, safe='')}")
+        if query_params:
+            manifest_url += "?" + "&".join(query_params)
 
         manifest_ref = {
             "id": manifest_url,
@@ -359,7 +394,122 @@ class CollectionGenerator(BaseGenerator):
         if thumbnail:
             manifest_ref["thumbnail"] = [thumbnail]
 
+        # Build metadata: entity-level fields + cached parent metadata
+        metadata = self._build_manifest_metadata(entity)
+        if cached_parent_metadata:
+            metadata = metadata + cached_parent_metadata
+        elif parent_entity:
+            metadata = metadata + self._build_parent_only_metadata(parent_entity)
+        if metadata:
+            manifest_ref["metadata"] = metadata
+
         return manifest_ref
+
+    def _build_manifest_metadata(self, entity: dict) -> list[dict]:
+        """Build IIIF metadata array from direct entity metadata only.
+
+        Skips relation, mediafile, and parent sources — those are either
+        too expensive or handled separately via cached parent metadata.
+        """
+        metadata_items = []
+        skip_properties = {"label", "summary", "rights", "attribution"}
+
+        for mapping in self._config.metadata_mappings:
+            if mapping.iiif_property.lower() in skip_properties:
+                continue
+            if mapping.source in ("relation", "mediafile", "parent"):
+                continue
+
+            lang = mapping.language or "nl"
+            value = self._get_entity_metadata_value(entity, mapping.elody_key)
+            if value:
+                if isinstance(value, list):
+                    for v in value:
+                        metadata_items.append({
+                            "label": self._make_language_map(mapping.iiif_property, lang),
+                            "value": self._make_language_map(str(v), lang),
+                        })
+                else:
+                    metadata_items.append({
+                        "label": self._make_language_map(mapping.iiif_property, lang),
+                        "value": self._make_language_map(str(value), lang),
+                    })
+
+        return metadata_items
+
+    def _build_parent_only_metadata(self, parent_entity: dict) -> list[dict]:
+        """Build IIIF metadata from parent entity for source="parent" mappings.
+
+        Resolves relation lookups (e.g. hasCreator) and property lookups
+        (e.g. theme, publication) once per parent, to be reused across
+        all child manifest references. Deduplicates by (label, value).
+        """
+        metadata_items = []
+        seen = set()
+        skip_properties = {"label", "summary", "rights", "attribution"}
+
+        for mapping in self._config.metadata_mappings:
+            if mapping.iiif_property.lower() in skip_properties:
+                continue
+            if mapping.source != "parent":
+                continue
+
+            lang = mapping.language or "nl"
+
+            if mapping.relation_type:
+                for relation in parent_entity.get("relations", []):
+                    if relation.get("type") != mapping.relation_type:
+                        continue
+                    related_id = relation.get("key")
+                    if not related_id:
+                        continue
+                    try:
+                        related_entity = self._get_from_collection_api(
+                            f"/entities/{related_id}", entity=True
+                        )
+                        value = self._get_entity_metadata_value(
+                            related_entity, mapping.related_key
+                        )
+                        if value:
+                            dedup_key = (mapping.iiif_property, value)
+                            if dedup_key in seen:
+                                continue
+                            seen.add(dedup_key)
+                            metadata_items.append({
+                                "label": self._make_language_map(mapping.iiif_property, lang),
+                                "value": self._make_language_map(value, lang),
+                            })
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch related entity {related_id}: {e}")
+            elif mapping.elody_key:
+                value = self._get_entity_metadata_value(parent_entity, mapping.elody_key)
+                if value:
+                    vals = value if isinstance(value, list) else [value]
+                    for v in vals:
+                        extracted = str(v)
+                        if mapping.regex:
+                            match = re.search(mapping.regex, extracted)
+                            if match:
+                                extracted = match.group(1)
+                            else:
+                                continue
+                        dedup_key = (mapping.iiif_property, extracted)
+                        if dedup_key in seen:
+                            continue
+                        seen.add(dedup_key)
+                        metadata_items.append({
+                            "label": self._make_language_map(mapping.iiif_property, lang),
+                            "value": self._make_language_map(extracted, lang),
+                        })
+
+        return metadata_items
+
+    def _get_entity_metadata_value(self, entity: dict, key: str):
+        """Extract a metadata value from an entity."""
+        for m in entity.get("metadata", []):
+            if isinstance(m, dict) and m.get("key") == key:
+                return m.get("value")
+        return None
 
     def _get_related_entities_by_type(
         self, entity: dict, relation_type: str
@@ -419,7 +569,7 @@ class CollectionGenerator(BaseGenerator):
             # Search for entities where the relation_type property contains this entity's ID
             params = {
                 f"property_{relation_type}": entity_id,
-                "limit": 100,
+                "limit": 500,
             }
             if target_type:
                 params["type"] = target_type
@@ -495,6 +645,17 @@ class CollectionGenerator(BaseGenerator):
         try:
             filename = None
 
+            # Strategy 0: If entity IS a mediafile, extract filename from dict (no API call)
+            if entity.get("type") == "mediafile":
+                filename = self._extract_filename(entity)
+                if filename:
+                    image_base = self._image_base_url or self.image_api_url_ext
+                    return {
+                        "id": f"{image_base}/iiif/3/{filename}/full/200,/0/default.jpg",
+                        "type": "Image",
+                        "format": "image/jpeg",
+                    }
+
             # Strategy 1: Check for primary_mediafile_id
             primary_mediafile_id = entity.get("primary_mediafile_id")
             if primary_mediafile_id:
@@ -526,8 +687,9 @@ class CollectionGenerator(BaseGenerator):
                     return self._get_entity_thumbnail(child_entities[0])
 
             if filename:
+                image_base = self._image_base_url or self.image_api_url_ext
                 return {
-                    "id": f"{self.image_api_url_ext}/iiif/3/{filename}/full/200,/0/default.jpg",
+                    "id": f"{image_base}/iiif/3/{filename}/full/200,/0/default.jpg",
                     "type": "Image",
                     "format": "image/jpeg",
                 }
@@ -577,6 +739,39 @@ class CollectionGenerator(BaseGenerator):
 
         except Exception as e:
             logger.warning(f"Failed to get mediafile {mediafile_id}: {e}")
+
+        return None
+
+    def _extract_filename(self, entity: dict) -> Optional[str]:
+        """Extract filename directly from an entity dict (no API call).
+
+        Handles both mediafile entities (from /entities?type=mediafile)
+        and mediafile resources (from /mediafiles/).
+        """
+        # Direct fields
+        if entity.get("transcode_filename"):
+            return entity["transcode_filename"]
+        if entity.get("filename"):
+            return entity["filename"]
+        if entity.get("display_filename"):
+            return entity["display_filename"]
+
+        # From metadata dict
+        metadata = entity.get("metadata", {})
+        if isinstance(metadata, dict):
+            if metadata.get("filename"):
+                return metadata["filename"]
+
+        # From metadata array (Elody format)
+        if isinstance(metadata, list):
+            for m in metadata:
+                if isinstance(m, dict) and m.get("key") == "filename":
+                    return m.get("value")
+
+        # From identifiers
+        for identifier in entity.get("identifiers", []):
+            if "." in identifier and not identifier.startswith("MED-"):
+                return identifier
 
         return None
 

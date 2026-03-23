@@ -39,20 +39,22 @@ class ConfigurableManifest(Resource):
         """
         Generate an IIIF v3 Manifest.
 
-        Args:
-            entity_id: ID of the entity to generate manifest for
-
-        Query Parameters:
-            config_file: Name of JSON config file (without .json extension)
-
-        Returns:
-            IIIF v3 Manifest JSON
-
-        Raises:
-            404: If entity not found
+        Checks the pre-generation cache first for instant responses.
         """
         config_file = request.args.get("config_file", type=str)
-        return self._generate(entity_id=entity_id, config_file=config_file, config_dict=None)
+        image_base_url = request.args.get("image_base_url", type=str)
+
+        # Check pre-generation cache
+        from resources.pre_generate import manifest_cache
+        cache_key = (entity_id, config_file or "", image_base_url or "")
+        cached = manifest_cache.get(cache_key)
+        if cached is not None:
+            return cached, 200, {
+                "Content-Type": "application/ld+json",
+                "Access-Control-Allow-Origin": "*",
+            }
+
+        return self._generate(entity_id=entity_id, config_file=config_file, config_dict=None, image_base_url=image_base_url)
 
     def post(self, entity_id: str):
         """
@@ -80,7 +82,7 @@ class ConfigurableManifest(Resource):
 
         return self._generate(entity_id=entity_id, config_file=None, config_dict=config_dict)
 
-    def _generate(self, entity_id: str, config_file: str = None, config_dict: dict = None):
+    def _generate(self, entity_id: str, config_file: str = None, config_dict: dict = None, image_base_url: str = None):
         """Internal method to generate manifest."""
         # Copy authorization header from request
         auth_header = request.headers.get("Authorization")
@@ -92,6 +94,7 @@ class ConfigurableManifest(Resource):
                 entity_id=entity_id,
                 config_file=config_file,
                 config_dict=config_dict,
+                image_base_url=image_base_url,
             )
 
             return manifest, 200, {

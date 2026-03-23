@@ -59,6 +59,7 @@ app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 from resources.manifest import Manifest
 from resources.collection import Collection
 from resources.configurable_manifest import ConfigurableManifest
+from resources.pre_generate import PreGenerate
 
 api.add_resource(
     Manifest,
@@ -76,6 +77,12 @@ api.add_resource(
 api.add_resource(
     ConfigurableManifest,
     "/iiif/manifest/<string:entity_id>",
+)
+
+# Batch pre-generation endpoint
+api.add_resource(
+    PreGenerate,
+    "/pre-generate",
 )
 
 if __name__ == "__main__":

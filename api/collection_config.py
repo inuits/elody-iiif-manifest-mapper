@@ -85,12 +85,19 @@ class MetadataMapping:
         iiif_property: The IIIF property to map to (e.g., "label")
         language: Optional language code for the value (e.g., "nl", "en")
         transform: Optional transformation to apply (e.g., "uppercase")
+        relation_type: For source="relation", the relation type to follow (e.g., "hasCreator")
+        related_key: For source="relation", the metadata key on the related entity (default: "title")
     """
 
-    elody_key: str
-    iiif_property: str
+    elody_key: str = ""
+    iiif_property: str = ""
     language: Optional[str] = None
     transform: Optional[str] = None
+    source: str = "entity"
+    relation_type: Optional[str] = None
+    related_key: str = "title"
+    regex: Optional[str] = None  # Extract value via regex capture group
+    max_values: Optional[int] = None  # Limit number of values for this mapping
 
     @classmethod
     def from_dict(cls, data: dict) -> "MetadataMapping":
@@ -100,6 +107,11 @@ class MetadataMapping:
             iiif_property=data.get("iiifProperty", ""),
             language=data.get("language"),
             transform=data.get("transform"),
+            source=data.get("source", "entity"),
+            relation_type=data.get("relationType"),
+            related_key=data.get("relatedKey", "title"),
+            regex=data.get("regex"),
+            max_values=data.get("maxValues"),
         )
 
     @classmethod
@@ -112,6 +124,9 @@ class MetadataMapping:
             iiif_property=metadata.get("iiifProperty", ""),
             language=metadata.get("language"),
             transform=metadata.get("transform"),
+            source=metadata.get("source", "entity"),
+            relation_type=metadata.get("relationType"),
+            related_key=metadata.get("relatedKey", "title"),
         )
 
 

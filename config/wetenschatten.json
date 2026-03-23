@@ -17,17 +17,27 @@
     },
     {
       "relationType": "hasAlbum",
-      "mapsToIIIF": "Manifest",
+      "mapsToIIIF": "Collection",
       "order": 2,
       "inverse": true,
       "targetType": "media"
+    },
+    {
+      "relationType": "belongsTo",
+      "mapsToIIIF": "Manifest",
+      "order": 3,
+      "inverse": true,
+      "targetType": "mediafile"
     }
   ],
 
   "metadataMappings": [
     {"elodyKey": "title", "iiifProperty": "label", "language": "nl"},
     {"elodyKey": "description", "iiifProperty": "summary", "language": "nl"},
-    {"elodyKey": "creator", "iiifProperty": "Maker", "language": "nl"},
-    {"elodyKey": "date", "iiifProperty": "Datum", "language": "nl"}
+    {"elodyKey": "description", "iiifProperty": "Beschrijving", "language": "nl"},
+    {"source": "parent", "relationType": "hasCreator", "relatedKey": "name", "iiifProperty": "Auteur", "language": "nl", "maxValues": 3},
+    {"source": "parent", "elodyKey": "publication", "iiifProperty": "Publicatie", "language": "nl", "maxValues": 2},
+    {"source": "parent", "elodyKey": "theme", "iiifProperty": "Thema", "language": "nl"},
+    {"source": "parent", "elodyKey": "publication", "iiifProperty": "Periode", "language": "nl", "regex": "\\((\\d{4})\\)"}
   ]
 }
