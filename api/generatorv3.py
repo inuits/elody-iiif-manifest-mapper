@@ -4,11 +4,12 @@ from base_generator import BaseGenerator
 from iiif_prezi3 import Manifest, KeyValueString
 from elody.exceptions import NoMediafilesException
 import re
+from urllib.parse import quote
 
 
 class ManifestGeneratorv3(BaseGenerator):
     def __add_canvas_to_manifest(self, manifest, mediafile):
-        id = mediafile.get("transcode_filename", mediafile["filename"])
+        id = quote(mediafile.get("transcode_filename", mediafile["filename"]))
         source = self._get_item_metadata_value(mediafile, "source")
         image_url = self.image_api_url_ext + "/iiif/3/" + id
         canvas = manifest.make_canvas(

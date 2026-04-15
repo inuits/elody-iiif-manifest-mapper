@@ -7,6 +7,11 @@ import re
 class ManifestGenerator(BaseGenerator):
     def __add_canvas_to_sequence(self, seq, mediafile):
         ident = mediafile.get("transcode_filename", mediafile["filename"])
+        # This is required for a part of the pre-authorize script in cantaloupe
+        # to correctly identify the identifier. Not massively happy though,
+        # feels like it should just be possible to properly url-encode it but
+        # that leads to other errors
+        ident = ident.replace(" ", "%20")
         cvs = seq.canvas(ident=ident, label=ident)
         image = cvs.set_image_annotation(ident, iiif=True)
         image.license = self._get_license_for_mediafile(mediafile)
