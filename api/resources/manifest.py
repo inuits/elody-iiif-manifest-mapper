@@ -24,7 +24,7 @@ class Manifest(Resource):
             generator = {2: ManifestGenerator, 3: ManifestGeneratorv3}.get(version)
             if not generator:
                 raise UnsupportedVersionException()
-            generator().generate_manifest(entity_id)
+            return generator().generate_manifest(entity_id)
         except NoMediafilesException:
             abort(
                 403, message=f"Entity with id {entity_id} has no accessible mediafiles."
