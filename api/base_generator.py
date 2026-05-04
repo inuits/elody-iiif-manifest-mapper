@@ -19,7 +19,16 @@ class BaseGenerator(metaclass=Singleton):
         self.image_api_url = os.getenv("IMAGE_API_URL")
         self.image_api_url_ext = os.getenv("IMAGE_API_URL_EXT")
         self.presentation_api_url = os.getenv("PRESENTATION_API_URL")
+        # Default upstream auth: fall back to STATIC_JWT when the inbound
+        # request has no Authorization header. Public canopy site builds
+        # call /collection/<id> without auth; without this default, every
+        # upstream call to collection-api 401's and entities resolve to None.
+        # An inbound Authorization header still overrides per-request via
+        # the resource handlers.
         self.headers = {}
+        static_jwt = os.getenv("STATIC_JWT")
+        if static_jwt:
+            self.headers["Authorization"] = f"Bearer {static_jwt}"
 
     def _get_attribution_for_mediafile(self, mediafile):
         ret = f'source: {self._get_item_metadata_value(mediafile, "source")}'
