@@ -30,6 +30,7 @@ FROM base-stage AS build-stage
 
 COPY docker/pip.conf /etc
 COPY api ./api
+COPY config ./config
 
 RUN pip install --no-cache-dir -r requirements.txt
 
