@@ -28,6 +28,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
         super().__init__()
         self._config: Optional[CollectionConfig] = None
         self._image_base_url: Optional[str] = None  # Override for image URLs (e.g. dashboard proxy)
+        self._config_file: Optional[str] = None  # Track config file for self-referencing manifest id
 
     def generate_manifest(
         self,
@@ -49,10 +50,19 @@ class ConfigurableManifestGenerator(BaseGenerator):
         """
         # Store image base URL override (e.g. dashboard proxy URL)
         self._image_base_url = image_base_url.rstrip("/") if image_base_url else None
+        # Track config_file so the manifest's own `id` field can advertise it.
+        # Without this, canopy-iiif refetches the manifest by its `id` and the
+        # call lacks config_file — metadataMappings aren't applied and the
+        # manifest comes back without Auteur/Thema/Periode metadata, breaking
+        # related-items grouping in the viewer.
+        self._config_file = config_file
 
         # Load config (dict > file > default)
         if config_dict:
             self._config = CollectionConfig.from_dict(config_dict)
+            # POST-based dict configs can't be referenced by URL, so don't
+            # advertise a config_file in the self-id.
+            self._config_file = None
         elif config_file:
             self._config = CollectionConfig.from_json_file(config_file)
         else:
@@ -113,12 +123,19 @@ class ConfigurableManifestGenerator(BaseGenerator):
         summary = self._extract_mapped_value(entity, "summary", first_mediafile)
 
         # Build manifest ID using /iiif/manifest/ endpoint (strip trailing slashes from base URL)
-        # Include image_base_url so runtime fetches (e.g. Clover viewer) also get proxied image URLs
+        # Include image_base_url so runtime fetches (e.g. Clover viewer) also get proxied image URLs.
+        # Include config_file too, otherwise the viewer's refetch by id would load the manifest
+        # without the metadataMappings config and lose Auteur/Thema/Periode metadata.
+        from urllib.parse import quote
         base_url = self.presentation_api_url.rstrip("/")
         manifest_id = f"{base_url}/iiif/manifest/{entity_id}"
+        query_params = []
+        if self._config_file:
+            query_params.append(f"config_file={self._config_file}")
         if self._image_base_url:
-            from urllib.parse import quote
-            manifest_id += f"?image_base_url={quote(self._image_base_url, safe='')}"
+            query_params.append(f"image_base_url={quote(self._image_base_url, safe='')}")
+        if query_params:
+            manifest_id += "?" + "&".join(query_params)
 
         # Create manifest structure
         manifest = {
