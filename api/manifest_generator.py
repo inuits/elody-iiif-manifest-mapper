@@ -378,27 +378,50 @@ class ConfigurableManifestGenerator(BaseGenerator):
                     })
             elif mapping.source == "mediafile" and mediafile:
                 value = self._get_entity_metadata_value(mediafile, mapping.elody_key)
-                if value:
-                    metadata_items.append({
-                        "label": self._make_language_map(mapping.iiif_property, lang),
-                        "value": self._make_language_map(value, lang),
-                    })
+                self._append_with_regex(
+                    metadata_items, seen, value, mapping, lang
+                )
             else:
                 value = self._get_entity_metadata_value(entity, mapping.elody_key)
-                if value:
-                    if isinstance(value, list):
-                        for v in value:
-                            metadata_items.append({
-                                "label": self._make_language_map(mapping.iiif_property, lang),
-                                "value": self._make_language_map(str(v), lang),
-                            })
-                    else:
-                        metadata_items.append({
-                            "label": self._make_language_map(mapping.iiif_property, lang),
-                            "value": self._make_language_map(str(value), lang),
-                        })
+                self._append_with_regex(
+                    metadata_items, seen, value, mapping, lang
+                )
 
         return metadata_items
+
+    def _append_with_regex(
+        self,
+        metadata_items: list,
+        seen: set,
+        value,
+        mapping,
+        lang: str,
+    ) -> None:
+        """Append metadata item(s), applying optional regex extraction.
+
+        Honours the same regex semantics as source="parent" mappings — if a
+        regex is set and matches, only group(1) is used; if it doesn't match,
+        the entry is skipped entirely. Without a regex the raw value is used.
+        Deduplicates on (iiif_property, value).
+        """
+        if value is None or value == "":
+            return
+        values = value if isinstance(value, list) else [value]
+        for v in values:
+            extracted = str(v)
+            if mapping.regex:
+                match = re.search(mapping.regex, extracted)
+                if not match:
+                    continue
+                extracted = match.group(1).strip()
+            dedup_key = (mapping.iiif_property, extracted)
+            if dedup_key in seen:
+                continue
+            seen.add(dedup_key)
+            metadata_items.append({
+                "label": self._make_language_map(mapping.iiif_property, lang),
+                "value": self._make_language_map(extracted, lang),
+            })
 
     def _get_relation_metadata_values(
         self, entity: dict, relation_type: str, related_key: str

@@ -35,9 +35,11 @@
     {"elodyKey": "title", "iiifProperty": "label", "language": "nl"},
     {"elodyKey": "description", "iiifProperty": "summary", "language": "nl"},
     {"elodyKey": "description", "iiifProperty": "Beschrijving", "language": "nl"},
-    {"source": "parent", "relationType": "hasCreator", "relatedKey": "name", "iiifProperty": "Auteur", "language": "nl", "maxValues": 3},
-    {"source": "parent", "elodyKey": "publication", "iiifProperty": "Publicatie", "language": "nl", "maxValues": 2},
-    {"source": "parent", "elodyKey": "theme", "iiifProperty": "Thema", "language": "nl"},
-    {"source": "parent", "elodyKey": "publication", "iiifProperty": "Periode", "language": "nl", "regex": "\\((\\d{4})\\)"}
+
+    {"elodyKey": "title", "iiifProperty": "Auteur", "language": "nl", "regex": "^([^(]+?)\\s*\\("},
+    {"elodyKey": "title", "iiifProperty": "Periode", "language": "nl", "regex": "\\((\\d{4})"},
+    {"elodyKey": "title", "iiifProperty": "Publicatie", "language": "nl", "regex": "^(.+?)\\s*,\\s*fig"},
+
+    {"source": "parent", "elodyKey": "title", "iiifProperty": "Thema", "language": "nl", "regex": "^([^|]+?)\\s*\\|"}
   ]
 }
