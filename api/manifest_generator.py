@@ -71,22 +71,42 @@ class ConfigurableManifestGenerator(BaseGenerator):
         # Fetch entity
         entity = self._get_from_collection_api(f"/entities/{entity_id}", entity=True)
 
-        # If entity is a mediafile, use it directly as single canvas
+        # Resolve mediafiles and (optional) parent entity for metadata inheritance.
+        # Originally we only looked up the parent when entity.type == "mediafile",
+        # but the Wetenschatten data has manifests at the media level (not
+        # mediafile), so source="parent" mappings were silently empty — search
+        # facets and related-items grouped on Auteur/Thema/Periode came back
+        # blank. Always try the parent lookup via belongsTo when relations are
+        # present; if none exist, parent_entity stays None and source="parent"
+        # mappings simply yield nothing as before.
         parent_entity = None
-        if entity.get("type") == "mediafile":
+        entity_type = entity.get("type")
+        logger.info(
+            "manifest_generator: entity %s type=%s relations=%s",
+            entity_id,
+            entity_type,
+            [r.get("type") for r in (entity.get("relations") or [])],
+        )
+
+        if entity_type == "mediafile":
             mediafiles = [entity]
-            # Look up parent media entity for inherited metadata
-            for rel in entity.get("relations", []):
-                if rel.get("type") == "belongsTo":
-                    try:
-                        parent_entity = self._get_from_collection_api(
-                            f"/entities/{rel['key']}", entity=True
-                        )
-                    except Exception as e:
-                        logger.warning(f"Failed to fetch parent entity {rel['key']}: {e}")
-                    break
         else:
             mediafiles = self._get_mediafiles_for_entity(entity)
+
+        for rel in entity.get("relations", []) or []:
+            if rel.get("type") == "belongsTo":
+                try:
+                    parent_entity = self._get_from_collection_api(
+                        f"/entities/{rel['key']}", entity=True
+                    )
+                    logger.info(
+                        "manifest_generator: resolved parent %s for %s",
+                        rel.get("key"),
+                        entity_id,
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to fetch parent entity {rel['key']}: {e}")
+                break
 
         # Build manifest
         manifest = self._build_manifest(entity, mediafiles, parent_entity=parent_entity)
