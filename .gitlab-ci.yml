@@ -1,15 +1,14 @@
 ---
 include:
-  - project: 'inuits/gitlab-ci/pipeline-templates'
-    ref: 'v4.1.0'
-    file: 
-      - '/pipelines/customers/dams/deliver-multi-customer.yml'
-      - '/jobs/docker/build-pip.yml'
-
+  - project: "inuits/gitlab-ci/pipeline-templates"
+    ref: "v4.1.0"
+    file:
+      - "/pipelines/customers/dams/deliver-multi-customer.yml"
+      - "/jobs/docker/build-pip.yml"
 
 variables:
-  PROJECT: 'dams'
-  APPLICATION: 'iiif-manifest-mapper'
+  PROJECT: "dams"
+  APPLICATION: "iiif-manifest-mapper"
 
   HARBOR_PROJECT_DEV: elody-dams-dev
 
@@ -17,6 +16,13 @@ customers:
   parallel:
     matrix:
       - CUSTOMER:
-        - coghent
-        - digipolis
-        - vliz
+          - coghent
+          - digipolis
+          - vliz
+
+build:
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+      when: always
+    - if: "$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH"
+      when: manual
