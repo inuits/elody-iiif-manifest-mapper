@@ -8,6 +8,11 @@ import re
 
 class ManifestGeneratorv3(BaseGenerator):
     def __add_canvas_to_manifest(self, manifest, mediafile):
+        publication_status = self._get_item_metadata_value(
+            mediafile, "publication_status"
+        )
+        if publication_status != "publiek":
+            return False
         id = mediafile.get("transcode_filename", mediafile["filename"])
         source = self._get_item_metadata_value(mediafile, "source")
         image_url = self.image_api_url_ext + "/iiif/3/" + id

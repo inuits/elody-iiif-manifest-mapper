@@ -6,6 +6,11 @@ import re
 
 class ManifestGenerator(BaseGenerator):
     def __add_canvas_to_sequence(self, seq, mediafile):
+        publication_status = self._get_item_metadata_value(
+            mediafile, "publication_status"
+        )
+        if publication_status != "publiek":
+            return False
         ident = mediafile.get("transcode_filename", mediafile["filename"])
         cvs = seq.canvas(ident=ident, label=ident)
         image = cvs.set_image_annotation(ident, iiif=True)
