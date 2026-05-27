@@ -251,8 +251,12 @@ class PreGenerate(Resource):
                 "value": gen._make_language_map(gen._config.attribution),
             }
 
-        # Entity-specific metadata (e.g. Beschrijving) + pre-resolved parent metadata
+        # Entity-specific metadata (e.g. Beschrijving) + pre-resolved parent metadata.
+        # Honour each mapping's optional regex (same as _resolve_parent_metadata and
+        # the manifest/collection generators) so title-derived facets like Auteur /
+        # Periode index the extracted value instead of the raw title.
         entity_metadata = []
+        seen = set()
         skip_properties = {"label", "summary", "rights", "attribution"}
         for mapping in gen._config.metadata_mappings:
             if mapping.iiif_property.lower() in skip_properties:
@@ -261,18 +265,24 @@ class PreGenerate(Resource):
                 continue
             lang = mapping.language or "nl"
             value = gen._get_entity_metadata_value(mediafile, mapping.elody_key)
-            if value:
-                if isinstance(value, list):
-                    for v in value:
-                        entity_metadata.append({
-                            "label": gen._make_language_map(mapping.iiif_property, lang),
-                            "value": gen._make_language_map(str(v), lang),
-                        })
-                else:
-                    entity_metadata.append({
-                        "label": gen._make_language_map(mapping.iiif_property, lang),
-                        "value": gen._make_language_map(str(value), lang),
-                    })
+            if not value:
+                continue
+            vals = value if isinstance(value, list) else [value]
+            for v in vals:
+                extracted = str(v)
+                if mapping.regex:
+                    match = re.search(mapping.regex, extracted)
+                    if not match:
+                        continue
+                    extracted = match.group(1).strip()
+                dedup_key = (mapping.iiif_property, extracted)
+                if dedup_key in seen:
+                    continue
+                seen.add(dedup_key)
+                entity_metadata.append({
+                    "label": gen._make_language_map(mapping.iiif_property, lang),
+                    "value": gen._make_language_map(extracted, lang),
+                })
 
         all_metadata = entity_metadata + parent_metadata_items
         if all_metadata:
