@@ -1,11 +1,12 @@
 import logging
 import os
-import requests
 import secrets
 
+import requests
 from flask import Flask
 from flask_restful import Api
 from healthcheck import HealthCheck
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
@@ -18,6 +19,7 @@ if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     )
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
 api = Api(app)
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(16))
 
@@ -30,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 def iiif_available():
-    return True, requests.get(f'{os.getenv("IMAGE_API_URL")}/health').text
+    return True, requests.get(f"{os.getenv('IMAGE_API_URL')}/health").text
 
 
 health = HealthCheck()
@@ -39,9 +41,9 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
 
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
-from resources.manifest import Manifest
 from resources.collection import Collection
 from resources.configurable_manifest import ConfigurableManifest
+from resources.manifest import Manifest
 from resources.pre_generate import PreGenerate
 
 api.add_resource(
