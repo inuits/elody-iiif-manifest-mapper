@@ -39,7 +39,10 @@ class ManifestGeneratorv3(BaseGenerator):
 
     def generate_manifest(self, entity_id):
         entity = self._get_from_collection_api(
-            f"/entities/{entity_id}", entity=True, check_canonical_uris=True
+            f"/entities/{entity_id}",
+            entity=True,
+            check_canonical_uris=True,
+            entity_id=entity_id,
         )
         mediafiles = self._get_from_collection_api(
             f"/entities/{entity_id}/mediafiles", mediafiles=True

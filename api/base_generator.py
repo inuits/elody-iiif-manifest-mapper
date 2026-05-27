@@ -42,7 +42,12 @@ class BaseGenerator(metaclass=Singleton):
         return ret
 
     def _get_from_collection_api(
-        self, endpoint, entity=False, mediafiles=False, check_canonical_uris=False
+        self,
+        endpoint,
+        entity=False,
+        mediafiles=False,
+        check_canonical_uris=False,
+        entity_id=None,
     ):
         req = requests.get(
             f"{self.collection_api_url}{endpoint}",
@@ -56,6 +61,10 @@ class BaseGenerator(metaclass=Singleton):
         elif req.status_code in {301, 302}:
             location = req.headers["location"]
             raise RedirectException(canonical_id=location.split("/")[-1])
+        if entity_id and (canonical_id := req.json().get("_id")):
+            if entity_id != canonical_id:
+                raise RedirectException(canonical_id)
+
         return req.json()
 
     def _get_item_metadata_value(self, item, key, include_lang=False):
