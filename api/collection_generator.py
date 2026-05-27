@@ -410,8 +410,16 @@ class CollectionGenerator(BaseGenerator):
 
         Skips relation, mediafile, and parent sources — those are either
         too expensive or handled separately via cached parent metadata.
+
+        Honours each mapping's optional regex the same way the manifest
+        generator and parent-metadata path do: when a regex is set, only
+        capture group 1 is emitted and non-matching values are dropped.
+        Without this, faceted fields derived from a title (e.g. Auteur /
+        Periode extracted from "Auguin (1898, fig. 16)") would index the
+        raw title and produce one useless facet value per item.
         """
         metadata_items = []
+        seen = set()
         skip_properties = {"label", "summary", "rights", "attribution"}
 
         for mapping in self._config.metadata_mappings:
@@ -422,18 +430,24 @@ class CollectionGenerator(BaseGenerator):
 
             lang = mapping.language or "nl"
             value = self._get_entity_metadata_value(entity, mapping.elody_key)
-            if value:
-                if isinstance(value, list):
-                    for v in value:
-                        metadata_items.append({
-                            "label": self._make_language_map(mapping.iiif_property, lang),
-                            "value": self._make_language_map(str(v), lang),
-                        })
-                else:
-                    metadata_items.append({
-                        "label": self._make_language_map(mapping.iiif_property, lang),
-                        "value": self._make_language_map(str(value), lang),
-                    })
+            if not value:
+                continue
+            vals = value if isinstance(value, list) else [value]
+            for v in vals:
+                extracted = str(v)
+                if mapping.regex:
+                    match = re.search(mapping.regex, extracted)
+                    if not match:
+                        continue
+                    extracted = match.group(1).strip()
+                dedup_key = (mapping.iiif_property, extracted)
+                if dedup_key in seen:
+                    continue
+                seen.add(dedup_key)
+                metadata_items.append({
+                    "label": self._make_language_map(mapping.iiif_property, lang),
+                    "value": self._make_language_map(extracted, lang),
+                })
 
         return metadata_items
 
