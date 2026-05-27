@@ -1,7 +1,8 @@
-from base_generator import BaseGenerator
-from iiif_prezi.factory import ManifestFactory
-from elody.exceptions import NoMediafilesException
 import re
+
+from base_generator import BaseGenerator
+from elody.exceptions import NoMediafilesException
+from iiif_prezi.factory import ManifestFactory
 
 
 class ManifestGenerator(BaseGenerator):
@@ -38,7 +39,9 @@ class ManifestGenerator(BaseGenerator):
         return fac
 
     def generate_manifest(self, entity_id):
-        entity = self._get_from_collection_api(f"/entities/{entity_id}", entity=True)
+        entity = self._get_from_collection_api(
+            f"/entities/{entity_id}", entity=True, check_canonical_uris=True
+        )
         mediafiles = self._get_from_collection_api(
             f"/entities/{entity_id}/mediafiles", mediafiles=True
         )
@@ -50,7 +53,7 @@ class ManifestGenerator(BaseGenerator):
         )
         manifest.set_description(self._get_item_metadata_value(entity, "description"))
         manifest.rendering = {
-            "@id": entity.get("data", dict()).get(
+            "@id": entity.get("data", {}).get(
                 "@id", f"{self.collection_api_url}/entities/{entity_id}"
             )
         }

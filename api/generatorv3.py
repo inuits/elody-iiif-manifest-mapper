@@ -1,10 +1,10 @@
 import json
-
-from base_generator import BaseGenerator
-from iiif_prezi3 import Manifest, KeyValueString
-from elody.exceptions import NoMediafilesException
 import re
 from urllib.parse import quote
+
+from base_generator import BaseGenerator
+from elody.exceptions import NoMediafilesException
+from iiif_prezi3 import KeyValueString, Manifest
 
 
 class ManifestGeneratorv3(BaseGenerator):
@@ -38,7 +38,9 @@ class ManifestGeneratorv3(BaseGenerator):
         return True
 
     def generate_manifest(self, entity_id):
-        entity = self._get_from_collection_api(f"/entities/{entity_id}", entity=True)
+        entity = self._get_from_collection_api(
+            f"/entities/{entity_id}", entity=True, check_canonical_uris=True
+        )
         mediafiles = self._get_from_collection_api(
             f"/entities/{entity_id}/mediafiles", mediafiles=True
         )
@@ -49,10 +51,10 @@ class ManifestGeneratorv3(BaseGenerator):
             label=title,
             summary=description,
             rendering={
-                "id": entity.get("data", dict()).get(
+                "id": entity.get("data", {}).get(
                     "@id", f"{self.collection_api_url}/entities/{entity_id}"
                 ),
-                "type": entity.get("data", dict()).get(
+                "type": entity.get("data", {}).get(
                     "@type", entity.get("type", "asset")
                 ),
                 "label": title,

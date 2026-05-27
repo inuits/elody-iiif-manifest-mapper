@@ -1,7 +1,10 @@
 import os
-import requests
 
-from elody.exceptions import NotFoundException, NoMediafilesException
+import requests
+from elody.exceptions import NoMediafilesException, NotFoundException
+from manifest_exceptions import RedirectException
+
+allow_static_jwt = os.getenv("ALLOW_STATIC_JWT", "false").lower() in {"true", "1"}
 
 
 class Singleton(type):
@@ -9,7 +12,7 @@ class Singleton(type):
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
 
 
@@ -27,23 +30,32 @@ class BaseGenerator(metaclass=Singleton):
         # the resource handlers.
         self.headers = {}
         static_jwt = os.getenv("STATIC_JWT")
-        if static_jwt:
+        if static_jwt and allow_static_jwt:
             self.headers["Authorization"] = f"Bearer {static_jwt}"
 
     def _get_attribution_for_mediafile(self, mediafile):
-        ret = f'source: {self._get_item_metadata_value(mediafile, "source")}'
+        ret = f"source: {self._get_item_metadata_value(mediafile, 'source')}"
         if photographer := self._get_item_metadata_value(mediafile, "photographer"):
             ret = f"photographer: {photographer}, {ret}"
         if rights_holder := self._get_item_metadata_value(mediafile, "copyright"):
             ret = f"rightsholder: {rights_holder}, {ret}"
         return ret
 
-    def _get_from_collection_api(self, endpoint, entity=False, mediafiles=False):
-        req = requests.get(f"{self.collection_api_url}{endpoint}", headers=self.headers)
+    def _get_from_collection_api(
+        self, endpoint, entity=False, mediafiles=False, check_canonical_uris=False
+    ):
+        req = requests.get(
+            f"{self.collection_api_url}{endpoint}",
+            headers=self.headers,
+            allow_redirects=not check_canonical_uris,
+        )
         if entity and req.status_code == 404:
             raise NotFoundException()
         elif mediafiles and not len(req.json()):
             raise NoMediafilesException()
+        elif req.status_code in {301, 302}:
+            location = req.headers["location"]
+            raise RedirectException(canonical_id=location.split("/")[-1])
         return req.json()
 
     def _get_item_metadata_value(self, item, key, include_lang=False):

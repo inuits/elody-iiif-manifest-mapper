@@ -1,14 +1,14 @@
 import app
-
 from elody.exceptions import (
     NoMediafilesException,
     NotFoundException,
     UnsupportedVersionException,
 )
-from flask import after_this_request
+from flask import after_this_request, redirect, url_for
 from flask_restful import Resource, abort
 from generator import ManifestGenerator
 from generatorv3 import ManifestGeneratorv3
+from manifest_exceptions import RedirectException
 
 
 class Manifest(Resource):
@@ -35,6 +35,11 @@ class Manifest(Resource):
             abort(
                 400,
                 message=f"Version {version} is not supported. Only version 2 & 3 are currently supported.",
+            )
+        except RedirectException as r:
+            return redirect(
+                url_for("manifest", entity_id=r.canonical_id, version=version),
+                code=301,
             )
         except Exception as ex:
             message = f"Failed to generate manifest: {ex}"
