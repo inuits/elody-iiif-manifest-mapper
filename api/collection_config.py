@@ -145,6 +145,9 @@ class CollectionConfig:
         rights_uri: Default rights/license URI
         attribution: Default attribution text
         base_url: Base URL for generated IIIF resources
+        viewing_direction: Manifest viewingDirection (e.g. "left-to-right")
+        behavior: Manifest behavior (e.g. "paged")
+        provider: IIIF provider block (list of Agent dicts)
     """
 
     name: str
@@ -156,6 +159,9 @@ class CollectionConfig:
     rights_uri: Optional[str] = None
     attribution: Optional[str] = None
     base_url: Optional[str] = None
+    viewing_direction: Optional[str] = None
+    behavior: Optional[str] = None
+    provider: Optional[list] = None
 
     @classmethod
     def from_dict(cls, data: dict) -> "CollectionConfig":
@@ -191,6 +197,9 @@ class CollectionConfig:
             rights_uri=data.get("rightsUri"),
             attribution=data.get("attribution"),
             base_url=data.get("baseUrl"),
+            viewing_direction=data.get("viewingDirection"),
+            behavior=data.get("behavior"),
+            provider=data.get("provider"),
         )
 
     @classmethod

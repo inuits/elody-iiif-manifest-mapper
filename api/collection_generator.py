@@ -213,7 +213,11 @@ class CollectionGenerator(BaseGenerator):
         entity_id = entity.get("_id") or entity.get("id")
 
         # Extract metadata using mappings
-        label = self._extract_mapped_value(entity, "label") or f"Collection {entity_id}"
+        label = (
+            self._extract_mapped_value(entity, "label")
+            or self._get_entity_metadata_value(entity, "name")
+            or f"Collection {entity_id}"
+        )
         summary = self._extract_mapped_value(entity, "summary")
         rights = self._extract_mapped_value(entity, "rights")
 
@@ -255,6 +259,10 @@ class CollectionGenerator(BaseGenerator):
                     attribution or self._config.attribution
                 ),
             }
+
+        # Add provider from config (identification/contact of the data owner)
+        if self._config.provider:
+            collection["provider"] = self._config.provider
 
         # Add thumbnail from first mediafile if available
         thumbnail = self._get_entity_thumbnail(entity)

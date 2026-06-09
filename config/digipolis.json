@@ -1,0 +1,47 @@
+{
+  "name": "Digipolis DAMS",
+  "description": "IIIF Presentation API v3 profile for digipolis-dams (Stad Antwerpen)",
+  "iiifVersion": 3,
+
+  "viewingDirection": "left-to-right",
+  "behavior": "paged",
+
+  "provider": [
+    {
+      "id": "https://data.antwerpen.be/agent/stad-antwerpen",
+      "type": "Agent",
+      "label": { "nl": ["Stad Antwerpen"] },
+      "homepage": [
+        {
+          "id": "https://antwerpen.be/",
+          "type": "Text",
+          "label": { "nl": ["Homepage Stad Antwerpen"] },
+          "format": "text/html"
+        }
+      ]
+    }
+  ],
+
+  "metadataMappings": [
+    { "elodyKey": "title", "iiifProperty": "label", "language": "nl" },
+    { "elodyKey": "description", "iiifProperty": "summary", "language": "nl" },
+
+    { "elodyKey": "title", "iiifProperty": "Titel", "language": "nl" },
+    { "elodyKey": "creator", "iiifProperty": "Maker", "language": "nl" },
+    { "elodyKey": "date", "iiifProperty": "Datering", "language": "nl" },
+    { "elodyKey": "external_identifier", "iiifProperty": "Inventarisnummer", "language": "nl" },
+
+    { "source": "relation", "relationType": "hasInstitution", "relatedKey": "name", "iiifProperty": "Bewaarinstelling", "language": "nl" },
+    { "source": "relation", "relationType": "hasInstitution", "relatedKey": "name", "iiifProperty": "Data-eigenaar", "language": "nl" }
+  ],
+
+  "traversalSteps": [
+    {
+      "relationType": "hasInstitution",
+      "mapsToIIIF": "Manifest",
+      "order": 1,
+      "inverse": true,
+      "targetType": "asset"
+    }
+  ]
+}

@@ -182,6 +182,18 @@ class ConfigurableManifestGenerator(BaseGenerator):
         if license_uri or self._config.rights_uri:
             manifest["rights"] = license_uri or self._config.rights_uri
 
+        # Add presentation hints and provider from config
+        if self._config.viewing_direction:
+            manifest["viewingDirection"] = self._config.viewing_direction
+        if self._config.behavior:
+            manifest["behavior"] = (
+                self._config.behavior
+                if isinstance(self._config.behavior, list)
+                else [self._config.behavior]
+            )
+        if self._config.provider:
+            manifest["provider"] = self._config.provider
+
         # Add attribution
         attribution = self._extract_mapped_value(entity, "attribution")
         if attribution or self._config.attribution:
@@ -212,11 +224,11 @@ class ConfigurableManifestGenerator(BaseGenerator):
                 manifest["thumbnail"] = [thumbnail]
 
         # Build canvases from mediafiles
-        manifest["items"] = self._build_canvases(entity_id, mediafiles)
+        manifest["items"] = self._build_canvases(entity, mediafiles)
 
         return manifest
 
-    def _build_canvases(self, entity_id: str, mediafiles: list[dict]) -> list[dict]:
+    def _build_canvases(self, entity: dict, mediafiles: list[dict]) -> list[dict]:
         """
         Build Canvas items from mediafiles.
 
@@ -230,13 +242,13 @@ class ConfigurableManifestGenerator(BaseGenerator):
         canvases = []
 
         for idx, mediafile in enumerate(mediafiles):
-            canvas = self._build_canvas(entity_id, mediafile, idx)
+            canvas = self._build_canvas(entity, mediafile, idx)
             if canvas:
                 canvases.append(canvas)
 
         return canvases
 
-    def _build_canvas(self, entity_id: str, mediafile: dict, index: int) -> Optional[dict]:
+    def _build_canvas(self, entity: dict, mediafile: dict, index: int) -> Optional[dict]:
         """
         Build a single Canvas from a mediafile.
 
@@ -252,15 +264,11 @@ class ConfigurableManifestGenerator(BaseGenerator):
         if not filename:
             return None
 
+        entity_id = entity.get("_id") or entity.get("id")
         mediafile_id = mediafile.get("_id") or mediafile.get("id") or filename
 
-        # Get dimensions if available
-        metadata = mediafile.get("metadata", {})
-        if isinstance(metadata, dict):
-            width = metadata.get("img_width", 1000)
-            height = metadata.get("img_height", 1000)
-        else:
-            width, height = 1000, 1000
+        # Get dimensions (top-level fields, metadata dict or metadata array)
+        width, height = self._get_dimensions(mediafile)
 
         # Build image URL (use override if set, e.g. for dashboard proxy)
         image_base = self._image_base_url or self.image_api_url_ext
@@ -275,7 +283,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
         canvas = {
             "id": canvas_id,
             "type": "Canvas",
-            "label": self._make_language_map(filename),
+            "label": self._make_language_map(self._build_canvas_label(entity, mediafile, filename)),
             "width": width,
             "height": height,
             "items": [
@@ -291,6 +299,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
                                 "id": f"{image_url}/full/max/0/default.jpg",
                                 "type": "Image",
                                 "format": "image/jpeg",
+                                "label": self._make_language_map(filename),
                                 "width": width,
                                 "height": height,
                                 "service": [
@@ -327,7 +336,83 @@ class ConfigurableManifestGenerator(BaseGenerator):
             ],
         }
 
+        # Per-image rights statement (rights are registered per mediafile).
+        rights = self._get_license_for_mediafile(mediafile)
+        if rights:
+            canvas["rights"] = rights
+
+        # Per-image attribution / required statement.
+        required_statement = self._build_required_statement(mediafile)
+        if required_statement:
+            canvas["requiredStatement"] = required_statement
+
         return canvas
+
+    def _get_dimensions(self, mediafile: dict) -> tuple:
+        def _coerce(value):
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return None
+
+        # Top-level fields
+        width = _coerce(mediafile.get("img_width"))
+        height = _coerce(mediafile.get("img_height"))
+
+        # metadata dict
+        metadata = mediafile.get("metadata")
+        if (width is None or height is None) and isinstance(metadata, dict):
+            width = width if width is not None else _coerce(metadata.get("img_width"))
+            height = height if height is not None else _coerce(metadata.get("img_height"))
+
+        # metadata array (key/value entries)
+        if width is None or height is None:
+            width = width if width is not None else _coerce(
+                self._get_entity_metadata_value(mediafile, "img_width")
+            )
+            height = height if height is not None else _coerce(
+                self._get_entity_metadata_value(mediafile, "img_height")
+            )
+
+        return (width or 1000, height or 1000)
+
+    def _build_canvas_label(self, entity: dict, mediafile: dict, filename: str) -> str:
+        title = (
+            self._get_entity_metadata_value(entity, "title")
+            or self._get_entity_metadata_value(mediafile, "title")
+        )
+        maker = (
+            self._get_entity_metadata_value(entity, "creator")
+            or self._get_entity_metadata_value(mediafile, "creator")
+        )
+        date = (
+            self._get_entity_metadata_value(entity, "date")
+            or self._get_entity_metadata_value(mediafile, "date")
+        )
+
+        parts = []
+        if title:
+            parts.append(f"{title}.")
+        if maker:
+            parts.append(f"door {maker}")
+        if date:
+            parts.append(f"in {date}")
+        caption = " ".join(parts).strip()
+        return caption or filename
+
+    def _build_required_statement(self, mediafile: dict) -> Optional[dict]:
+        attribution = (
+            self._get_entity_metadata_value(mediafile, "attribution")
+            or self._get_entity_metadata_value(mediafile, "minimal_attribution")
+        )
+        if not attribution:
+            attribution = self._get_attribution_for_mediafile(mediafile)
+        if not attribution:
+            return None
+        return {
+            "label": self._make_language_map("Naamsvermelding"),
+            "value": self._make_language_map(attribution),
+        }
 
     def _build_metadata(
         self,
