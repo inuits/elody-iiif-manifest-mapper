@@ -406,7 +406,20 @@ class ConfigurableManifestGenerator(BaseGenerator):
             or self._get_entity_metadata_value(mediafile, "minimal_attribution")
         )
         if not attribution:
-            attribution = self._get_attribution_for_mediafile(mediafile)
+            mediafile_id = mediafile.get("_id") or mediafile.get("id")
+            if mediafile_id:
+                try:
+                    full = self._get_from_collection_api(
+                        f"/mediafiles/{mediafile_id}", entity=True
+                    )
+                    attribution = (
+                        self._get_entity_metadata_value(full, "attribution")
+                        or self._get_entity_metadata_value(full, "minimal_attribution")
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to fetch attribution for mediafile {mediafile_id}: {e}"
+                    )
         if not attribution:
             return None
         return {

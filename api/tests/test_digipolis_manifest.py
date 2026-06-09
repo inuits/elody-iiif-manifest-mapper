@@ -140,6 +140,24 @@ def test_canvas_has_per_image_rights_and_required_statement():
     assert any(v for v in value_map.values())
 
 
+def test_required_statement_fetches_computed_attribution_when_absent():
+    gen = _make_generator(CollectionConfig.from_dict({"name": "d", "iiifVersion": 3}))
+    gen._get_from_collection_api = lambda *a, **k: {
+        "metadata": [{"key": "attribution", "value": "Collectie Stad Antwerpen, EHC"}]
+    }
+    mf = _mediafile(metadata=[{"key": "rights", "value": "In Copyright"}])  # no attribution
+    canvas = gen._build_canvas(_asset(), mf, 0)
+    assert canvas["requiredStatement"]["value"]["nl"] == ["Collectie Stad Antwerpen, EHC"]
+
+
+def test_required_statement_omitted_when_no_attribution_anywhere():
+    gen = _make_generator(CollectionConfig.from_dict({"name": "d", "iiifVersion": 3}))
+    gen._get_from_collection_api = lambda *a, **k: {"metadata": []}
+    mf = _mediafile(metadata=[])
+    canvas = gen._build_canvas(_asset(), mf, 0)
+    assert "requiredStatement" not in canvas
+
+
 def test_canvas_label_generated_from_asset_fields():
     gen = _make_generator(CollectionConfig.from_dict({"name": "d", "iiifVersion": 3}))
     canvas = gen._build_canvas(_asset(), _mediafile(), 0)
@@ -153,6 +171,7 @@ def test_canvas_label_generated_from_asset_fields():
 
 def test_canvas_label_falls_back_to_filename_when_no_asset_metadata():
     gen = _make_generator(CollectionConfig.from_dict({"name": "d", "iiifVersion": 3}))
+    gen._get_from_collection_api = lambda *a, **k: {"metadata": []}
     canvas = gen._build_canvas({"_id": "asset-1", "metadata": []}, _mediafile(metadata=[]), 0)
     assert canvas["label"]["nl"] == ["abc123-DIG30965.tif"]
 

@@ -37,11 +37,26 @@
 
   "traversalSteps": [
     {
-      "relationType": "hasInstitution",
-      "mapsToIIIF": "Manifest",
+      "relationType": "hasContext",
+      "mapsToIIIF": "Collection",
       "order": 1,
+      "includeThumbnails": true,
       "inverse": true,
-      "targetType": "asset"
+      "targetType": "album"
+    },
+    {
+      "relationType": "hasAlbum",
+      "mapsToIIIF": "Collection",
+      "order": 2,
+      "inverse": true,
+      "targetType": "media"
+    },
+    {
+      "relationType": "belongsTo",
+      "mapsToIIIF": "Manifest",
+      "order": 3,
+      "inverse": true,
+      "targetType": "mediafile"
     }
   ]
 }
