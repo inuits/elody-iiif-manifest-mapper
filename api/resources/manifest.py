@@ -43,5 +43,5 @@ class Manifest(Resource):
             )
         except Exception as ex:
             message = f"Failed to generate manifest: {ex}"
-            app.logger.error(message)
+            app.logger.exception(message, exc_info=ex, stack_info=True)
             abort(500, message=message)
