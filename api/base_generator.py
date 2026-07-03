@@ -2,6 +2,7 @@ import os
 
 import requests
 from elody.exceptions import NoMediafilesException, NotFoundException
+from flask import request
 from manifest_exceptions import RedirectException
 
 allow_static_jwt = os.getenv("ALLOW_STATIC_JWT", "false").lower() in {"true", "1"}
@@ -30,6 +31,7 @@ class BaseGenerator(metaclass=Singleton):
         # the resource handlers.
         self.headers = {}
         static_jwt = os.getenv("STATIC_JWT")
+        self.session = requests.session()
         if static_jwt and allow_static_jwt:
             self.headers["Authorization"] = f"Bearer {static_jwt}"
 
@@ -49,9 +51,12 @@ class BaseGenerator(metaclass=Singleton):
         check_canonical_uris=False,
         entity_id=None,
     ):
-        req = requests.get(
+        req = self.session.get(
             f"{self.collection_api_url}{endpoint}",
-            headers=self.headers,
+            headers={
+                **self.headers,
+                **request.headers,
+            },
             allow_redirects=not check_canonical_uris,
         )
         if entity and req.status_code == 404:
