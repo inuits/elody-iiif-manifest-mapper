@@ -39,6 +39,7 @@
     {"elodyKey": "title", "iiifProperty": "Auteur", "language": "nl", "regex": "^([^(]+?)\\s*\\("},
     {"elodyKey": "title", "iiifProperty": "Periode", "language": "nl", "regex": "\\((\\d{4})"},
 
-    {"source": "parent", "elodyKey": "title", "iiifProperty": "Thema", "language": "nl", "regex": "^([^|]+?)\\s*\\|"}
+    {"source": "parent", "elodyKey": "title", "iiifProperty": "Thema", "language": "nl", "regex": "^([^|]+?)\\s*\\|"},
+    {"source": "parent", "elodyKey": "title", "iiifProperty": "Album", "language": "nl", "regex": "\\|\\s*(.+)$"}
   ]
 }
