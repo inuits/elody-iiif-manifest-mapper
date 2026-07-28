@@ -4,6 +4,7 @@ import requests
 from elody.exceptions import NoMediafilesException, NotFoundException
 from flask import request
 from manifest_exceptions import RedirectException
+from werkzeug.exceptions import Forbidden, Unauthorized
 
 allow_static_jwt = os.getenv("ALLOW_STATIC_JWT", "false").lower() in {"true", "1"}
 
@@ -66,6 +67,10 @@ class BaseGenerator(metaclass=Singleton):
         elif req.status_code in {301, 302}:
             location = req.headers["location"]
             raise RedirectException(canonical_id=location.split("/")[-1])
+        elif req.status_code == 401:
+            raise Unauthorized
+        elif req.status_code == 403:
+            raise Forbidden
         if entity_id and (canonical_id := req.json().get("_id")):
             if entity_id != canonical_id:
                 raise RedirectException(canonical_id)

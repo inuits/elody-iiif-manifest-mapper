@@ -44,6 +44,7 @@ class ManifestGeneratorv3(BaseGenerator):
             check_canonical_uris=True,
             entity_id=entity_id,
         )
+
         mediafiles = self._get_from_collection_api(
             f"/entities/{entity_id}/mediafiles", mediafiles=True
         )

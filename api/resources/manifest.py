@@ -9,6 +9,7 @@ from flask_restful import Resource, abort
 from generator import ManifestGenerator
 from generatorv3 import ManifestGeneratorv3
 from manifest_exceptions import RedirectException
+from werkzeug.exceptions import Forbidden, Unauthorized
 
 
 class Manifest(Resource):
@@ -41,6 +42,10 @@ class Manifest(Resource):
                 url_for("manifest", entity_id=r.canonical_id, version=version),
                 code=301,
             )
+        except Unauthorized:
+            abort(401, message="This entity is not accessible to unauthorized users.")
+        except Forbidden:
+            abort(403, message="This entity is not accessible to unauthorized users.")
         except Exception as ex:
             message = f"Failed to generate manifest: {ex}"
             app.logger.exception(message, exc_info=ex, stack_info=True)
