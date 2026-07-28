@@ -40,6 +40,7 @@
     {"elodyKey": "title", "iiifProperty": "Periode", "language": "nl", "regex": "\\((\\d{4})"},
 
     {"source": "parent", "elodyKey": "title", "iiifProperty": "Thema", "language": "nl", "regex": "^([^|]+?)\\s*\\|"},
-    {"source": "relation", "relationType": "hasAlbum", "relatedKey": "title", "iiifProperty": "Album", "language": "nl"}
+    {"source": "parent", "relationType": "hasAlbum", "relatedKey": "title", "iiifProperty": "Album", "language": "nl"},
+    {"source": "parent", "relationType": "hasLocation", "relatedKey": "title", "iiifProperty": "Locatie", "language": "nl"}
   ]
 }
