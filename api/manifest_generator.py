@@ -16,7 +16,11 @@ from collection_config import CollectionConfig, MetadataMapping, DEFAULT_METADAT
 logger = logging.getLogger(__name__)
 
 # Relation type mediafiles use to point at their License vocab entity.
-# Confirmed against live data — see docs/superpowers/plans/2026-07-28-license-badge.md, Task 1.
+# Confirmed against live data: the relation's own `key` IS the license URI
+# (no id indirection to resolve). See the license-badge implementation plan
+# in the sibling dams-canopy-generator-service repo
+# (docs/superpowers/plans/2026-07-28-license-badge.md, Task 1) for the full
+# investigation record.
 LICENSE_RELATION_TYPE = "hasMediaLicense"
 
 
@@ -488,11 +492,13 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         Looks for a relation of type LICENSE_RELATION_TYPE on `entity`. The
         relation's own `key` IS the license URI already (confirmed against
-        live data — see docs/superpowers/plans/2026-07-28-license-badge.md,
-        Task 1) — there's no id indirection to resolve for the URI. Only
+        live data) — there's no id indirection to resolve for the URI. Only
         the human-readable title needs a fetch: the license entity's own
         `_id` is that same URI, and its preference-label text lives under
-        metadata key `prefLabel`.
+        metadata key `prefLabel`. See the license-badge implementation plan
+        in the sibling dams-canopy-generator-service repo
+        (docs/superpowers/plans/2026-07-28-license-badge.md, Task 1) for the
+        full investigation record behind these facts.
 
         Title lookups are cached by license URI in `license_cache` (if
         provided) so a caller processing many entities in one run (e.g.
