@@ -298,6 +298,18 @@ class ConfigurableManifestGenerator(BaseGenerator):
                     "format": "image/jpeg",
                 }
             ],
+            # Download target for the Clover viewer. Clover only renders its
+            # download control from a manifest/canvas `rendering` array (it does
+            # not derive downloads from the image body), so expose the full-res
+            # JPEG here to make the viewer's download button appear.
+            "rendering": [
+                {
+                    "id": f"{image_url}/full/max/0/default.jpg",
+                    "type": "Image",
+                    "label": self._make_language_map("Download afbeelding (JPEG)"),
+                    "format": "image/jpeg",
+                }
+            ],
         }
 
         return canvas
