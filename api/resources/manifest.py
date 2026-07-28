@@ -43,7 +43,9 @@ class Manifest(Resource):
                 code=301,
             )
         except Unauthorized:
-            abort(401, message="This entity is not accessible to unauthorized users.")
+            abort(
+                401, message="This entity is not accessible to unauthenticated users."
+            )
         except Forbidden:
             abort(403, message="This entity is not accessible to unauthorized users.")
         except Exception as ex:
