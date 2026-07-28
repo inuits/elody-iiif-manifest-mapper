@@ -15,6 +15,10 @@ from collection_config import CollectionConfig, MetadataMapping, DEFAULT_METADAT
 
 logger = logging.getLogger(__name__)
 
+# Relation type mediafiles use to point at their License vocab entity.
+# Confirmed against live data — see docs/superpowers/plans/2026-07-28-license-badge.md, Task 1.
+LICENSE_RELATION_TYPE = "hasMediaLicense"
+
 
 class ConfigurableManifestGenerator(BaseGenerator):
     """
@@ -168,9 +172,11 @@ class ConfigurableManifestGenerator(BaseGenerator):
         if summary:
             manifest["summary"] = self._make_language_map(summary)
 
-        # Add rights from config
-        if self._config.rights_uri:
-            manifest["rights"] = self._config.rights_uri
+        # Add rights: prefer the entity's real license (if any), falling
+        # back to the static site-wide default from config.
+        license_title, license_uri = self._resolve_license(entity)
+        if license_uri or self._config.rights_uri:
+            manifest["rights"] = license_uri or self._config.rights_uri
 
         # Add attribution
         attribution = self._extract_mapped_value(entity, "attribution")
@@ -187,6 +193,11 @@ class ConfigurableManifestGenerator(BaseGenerator):
         metadata_items = self._build_metadata(
             entity, mediafile=first_mediafile, parent_entity=parent_entity
         )
+        if license_title:
+            metadata_items.append({
+                "label": self._make_language_map("Licentie", "nl"),
+                "value": self._make_language_map(license_title, "nl"),
+            })
         if metadata_items:
             manifest["metadata"] = metadata_items
 
@@ -468,6 +479,52 @@ class ConfigurableManifestGenerator(BaseGenerator):
                     f"Failed to fetch related entity {related_id}: {e}"
                 )
         return values
+
+    def _resolve_license(
+        self, entity: dict, license_cache: Optional[dict] = None
+    ) -> tuple[Optional[str], Optional[str]]:
+        """
+        Resolve an entity's license relation to (title, uri).
+
+        Looks for a relation of type LICENSE_RELATION_TYPE on `entity`. The
+        relation's own `key` IS the license URI already (confirmed against
+        live data — see docs/superpowers/plans/2026-07-28-license-badge.md,
+        Task 1) — there's no id indirection to resolve for the URI. Only
+        the human-readable title needs a fetch: the license entity's own
+        `_id` is that same URI, and its preference-label text lives under
+        metadata key `prefLabel`.
+
+        Title lookups are cached by license URI in `license_cache` (if
+        provided) so a caller processing many entities in one run (e.g.
+        pre_generate's batch build) only fetches each distinct license
+        term once, no matter how many entities use it. The live
+        single-entity path can omit `license_cache` — a fresh throwaway
+        dict is used and there's nothing to reuse across calls.
+
+        If the title fetch fails, the URI is still returned (it never
+        depended on that fetch) — only the title comes back None.
+        """
+        cache = license_cache if license_cache is not None else {}
+        for rel in entity.get("relations", []) or []:
+            if rel.get("type") != LICENSE_RELATION_TYPE:
+                continue
+            license_uri = rel.get("key")
+            if not license_uri:
+                continue
+            if license_uri not in cache:
+                from urllib.parse import quote
+
+                try:
+                    license_entity = self._get_from_collection_api(
+                        f"/entities/{quote(license_uri, safe='')}", entity=True
+                    )
+                    title = self._get_entity_metadata_value(license_entity, "prefLabel")
+                    cache[license_uri] = (title, license_uri)
+                except Exception as e:
+                    logger.warning(f"Failed to fetch license {license_uri}: {e}")
+                    cache[license_uri] = (None, license_uri)
+            return cache[license_uri]
+        return (None, None)
 
     def _get_mediafiles_for_entity(self, entity: dict) -> list[dict]:
         """
