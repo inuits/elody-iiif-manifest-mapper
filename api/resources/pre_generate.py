@@ -90,6 +90,11 @@ class PreGenerate(Resource):
         # Fetch parent entities and resolve metadata once per parent
         count = 0
         parent_cache = {}
+        # Shared across the whole run: a site realistically has only a
+        # handful of distinct license terms, so caching by license entity
+        # id turns "N mediafile lookups" into "≤ number of distinct
+        # license terms" lookups.
+        license_cache = {}
 
         parent_items = list(by_parent.items())
         if max_parents > 0:
@@ -126,7 +131,7 @@ class PreGenerate(Resource):
 
                 try:
                     manifest = self._build_manifest_fast(
-                        mediafile, parent_metadata_items
+                        mediafile, parent_metadata_items, license_cache
                     )
                     manifest_cache[cache_key] = manifest
                     count += 1
@@ -211,15 +216,21 @@ class PreGenerate(Resource):
         return metadata_items
 
     def _build_manifest_fast(
-        self, mediafile: dict, parent_metadata_items: list[dict]
+        self,
+        mediafile: dict,
+        parent_metadata_items: list[dict],
+        license_cache: dict,
     ) -> dict:
         """Build a manifest for a mediafile without any parent API calls.
 
         Uses pre-resolved parent_metadata_items instead of looking up
-        relations again.
+        relations again. License is the one exception: it's resolved via
+        gen._resolve_license, which uses license_cache to fetch each
+        distinct license term at most once across the whole batch run.
         """
         gen = self.generator
         entity_id = mediafile.get("_id") or mediafile.get("id")
+        license_title, license_uri = gen._resolve_license(mediafile, license_cache)
 
         # Label/summary from the mediafile itself
         label = gen._get_entity_metadata_value(mediafile, "title") or f"Item {entity_id}"
@@ -242,8 +253,8 @@ class PreGenerate(Resource):
         if summary:
             manifest["summary"] = gen._make_language_map(summary)
 
-        if gen._config.rights_uri:
-            manifest["rights"] = gen._config.rights_uri
+        if license_uri or gen._config.rights_uri:
+            manifest["rights"] = license_uri or gen._config.rights_uri
 
         if gen._config.attribution:
             manifest["requiredStatement"] = {
@@ -283,6 +294,12 @@ class PreGenerate(Resource):
                     "label": gen._make_language_map(mapping.iiif_property, lang),
                     "value": gen._make_language_map(extracted, lang),
                 })
+
+        if license_title:
+            entity_metadata.append({
+                "label": gen._make_language_map("Licentie", "nl"),
+                "value": gen._make_language_map(license_title, "nl"),
+            })
 
         all_metadata = entity_metadata + parent_metadata_items
         if all_metadata:
