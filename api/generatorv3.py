@@ -11,7 +11,7 @@ class ManifestGeneratorv3(BaseGenerator):
         publication_status = self._get_item_metadata_value(
             mediafile, "publication_status"
         )
-        if publication_status != "publiek":
+        if publication_status not in ["publiek", "beschermd", None]:
             return False
         id = mediafile.get("transcode_filename", mediafile["filename"])
         source = self._get_item_metadata_value(mediafile, "source")

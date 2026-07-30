@@ -9,7 +9,7 @@ class ManifestGenerator(BaseGenerator):
         publication_status = self._get_item_metadata_value(
             mediafile, "publication_status"
         )
-        if publication_status != "publiek":
+        if publication_status not in ["publiek", "beschermd", None]:
             return False
         ident = mediafile.get("transcode_filename", mediafile["filename"])
         cvs = seq.canvas(ident=ident, label=ident)
