@@ -321,7 +321,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
                 {
                     "id": f"{image_url}/full/max/0/default.jpg",
                     "type": "Image",
-                    "label": self._make_language_map("Download afbeelding (JPEG)"),
+                    "label": self._make_language_map("Download afbeelding"),
                     "format": "image/jpeg",
                 }
             ],
@@ -465,9 +465,12 @@ class ConfigurableManifestGenerator(BaseGenerator):
             List of metadata values from matching related entities
         """
         values = []
+        entity_id = entity.get("_id") or entity.get("id")
+        matched_any = False
         for relation in entity.get("relations", []):
             if relation.get("type") != relation_type:
                 continue
+            matched_any = True
             related_id = relation.get("key")
             if not related_id:
                 continue
@@ -478,10 +481,26 @@ class ConfigurableManifestGenerator(BaseGenerator):
                 value = self._get_entity_metadata_value(related_entity, related_key)
                 if value:
                     values.append(value)
+                    logger.debug(
+                        f"{relation_type}: resolved '{related_key}'={value!r} "
+                        f"from related entity {related_id} (source entity {entity_id})"
+                    )
+                else:
+                    logger.warning(
+                        f"{relation_type}: related entity {related_id} (source entity "
+                        f"{entity_id}) has no '{related_key}' value — metadata="
+                        f"{related_entity.get('metadata')} properties="
+                        f"{related_entity.get('properties')}"
+                    )
             except Exception as e:
                 logger.warning(
-                    f"Failed to fetch related entity {related_id}: {e}"
+                    f"{relation_type}: failed to fetch related entity {related_id} "
+                    f"(source entity {entity_id}): {e}"
                 )
+        if not matched_any:
+            logger.debug(
+                f"{relation_type}: entity {entity_id} has no '{relation_type}' relation"
+            )
         return values
 
     def _resolve_license(
@@ -664,6 +683,14 @@ class ConfigurableManifestGenerator(BaseGenerator):
             if isinstance(prop, dict):
                 return prop.get("value")
             return prop
+
+        # Format 3: flat top-level field directly on the document. Some
+        # entities — observed on mediafiles created via import — store
+        # fields like "title" as a bare top-level key with an empty
+        # "metadata" array, rather than nesting it in metadata/properties.
+        value = entity.get(key)
+        if isinstance(value, str) and value:
+            return value
 
         return None
 
