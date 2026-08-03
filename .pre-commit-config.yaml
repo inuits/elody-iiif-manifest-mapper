@@ -18,6 +18,6 @@ repos:
     rev: v0.16.1
     hooks:
       # Linter (replaces Flake8, isort, etc.)
-      - id: ruff-check
+      - id: ruff
       # Formatter (replaces Black)
       - id: ruff-format
