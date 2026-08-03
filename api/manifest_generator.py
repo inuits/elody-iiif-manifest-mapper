@@ -406,9 +406,9 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
     def _build_canvas_label(self, entity: dict, mediafile: dict, filename: str) -> str:
         title = (
-            mediafile.get("original_filename")
-            or self._get_entity_metadata_value(entity, "title")
+            self._get_entity_metadata_value(entity, "title")
             or self._get_entity_metadata_value(mediafile, "title")
+            or mediafile.get("original_filename")
         )
         maker = self._get_entity_metadata_value(
             entity, "creator"
@@ -417,13 +417,17 @@ class ConfigurableManifestGenerator(BaseGenerator):
             entity, "date"
         ) or self._get_entity_metadata_value(mediafile, "date")
 
+        collection_owning_instance = self._extract_mapped_value(entity, "Data-eigenaar")
+
         parts = []
         if title:
             parts.append(f"{title}.")
         if maker:
             parts.append(f"door {maker}")
         if date:
-            parts.append(f"in {date}")
+            parts.append(f"in {date}.")
+        if collection_owning_instance:
+            parts.append(collection_owning_instance)
         caption = " ".join(parts).strip()
         return caption or filename
 
