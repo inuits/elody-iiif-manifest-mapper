@@ -23,16 +23,36 @@
   ],
 
   "metadataMappings": [
-    { "elodyKey": "title", "iiifProperty": "label", "language": "nl" },
+    {
+      "elodyKey": "original_filename",
+      "iiifProperty": "label",
+      "language": "nl"
+    },
     { "elodyKey": "description", "iiifProperty": "summary", "language": "nl" },
 
     { "elodyKey": "title", "iiifProperty": "Titel", "language": "nl" },
     { "elodyKey": "creator", "iiifProperty": "Maker", "language": "nl" },
     { "elodyKey": "date", "iiifProperty": "Datering", "language": "nl" },
-    { "elodyKey": "external_identifier", "iiifProperty": "Inventarisnummer", "language": "nl" },
+    {
+      "elodyKey": "external_identifier",
+      "iiifProperty": "Inventarisnummer",
+      "language": "nl"
+    },
 
-    { "source": "relation", "relationType": "hasInstitution", "relatedKey": "name", "iiifProperty": "Bewaarinstelling", "language": "nl" },
-    { "source": "relation", "relationType": "hasInstitution", "relatedKey": "name", "iiifProperty": "Data-eigenaar", "language": "nl" }
+    {
+      "source": "relation",
+      "relationType": "hasInstitution",
+      "relatedKey": "name",
+      "iiifProperty": "Bewaarinstelling",
+      "language": "nl"
+    },
+    {
+      "source": "relation",
+      "relationType": "hasInstitution",
+      "relatedKey": "name",
+      "iiifProperty": "Data-eigenaar",
+      "language": "nl"
+    }
   ],
 
   "traversalSteps": [

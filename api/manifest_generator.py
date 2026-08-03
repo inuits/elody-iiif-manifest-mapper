@@ -7,11 +7,14 @@ mappings to be defined via JSON config.
 """
 
 import logging
+import os
 import re
-from typing import Optional
 
 from base_generator import BaseGenerator
-from collection_config import CollectionConfig, MetadataMapping, DEFAULT_METADATA_MAPPINGS
+from collection_config import (
+    DEFAULT_METADATA_MAPPINGS,
+    CollectionConfig,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +25,7 @@ logger = logging.getLogger(__name__)
 # (docs/superpowers/plans/2026-07-28-license-badge.md, Task 1) for the full
 # investigation record.
 LICENSE_RELATION_TYPE = "hasMediaLicense"
+DEFAULT_CONFIG_FILE = os.getenv("CLIENT_CONFIG_FILE")
 
 
 class ConfigurableManifestGenerator(BaseGenerator):
@@ -34,16 +38,20 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
     def __init__(self):
         super().__init__()
-        self._config: Optional[CollectionConfig] = None
-        self._image_base_url: Optional[str] = None  # Override for image URLs (e.g. dashboard proxy)
-        self._config_file: Optional[str] = None  # Track config file for self-referencing manifest id
+        self._config: CollectionConfig | None = None
+        self._image_base_url: str | None = (
+            None  # Override for image URLs (e.g. dashboard proxy)
+        )
+        self._config_file: str | None = (
+            None  # Track config file for self-referencing manifest id
+        )
 
     def generate_manifest(
         self,
         entity_id: str,
-        config_file: Optional[str] = None,
-        config_dict: Optional[dict] = None,
-        image_base_url: Optional[str] = None,
+        config_file: str | None = None,
+        config_dict: dict | None = None,
+        image_base_url: str | None = None,
     ) -> dict:
         """
         Generate an IIIF v3 Manifest from an Elody entity.
@@ -65,7 +73,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
         # related-items grouping in the viewer.
         self._config_file = config_file
 
-        # Load config (dict > file > default)
+        # Load config (dict > file > default file > default)
         if config_dict:
             self._config = CollectionConfig.from_dict(config_dict)
             # POST-based dict configs can't be referenced by URL, so don't
@@ -73,6 +81,8 @@ class ConfigurableManifestGenerator(BaseGenerator):
             self._config_file = None
         elif config_file:
             self._config = CollectionConfig.from_json_file(config_file)
+        elif DEFAULT_CONFIG_FILE:
+            self._config = CollectionConfig.from_json_file(DEFAULT_CONFIG_FILE)
         else:
             self._config = self._default_config()
 
@@ -147,7 +157,10 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         # Extract metadata using mappings (pass first mediafile for mediafile-source mappings)
         first_mediafile = mediafiles[0] if mediafiles else None
-        label = self._extract_mapped_value(entity, "label", first_mediafile) or f"Item {entity_id}"
+        label = (
+            self._extract_mapped_value(entity, "label", first_mediafile)
+            or f"Item {entity_id}"
+        )
         summary = self._extract_mapped_value(entity, "summary", first_mediafile)
 
         # Build manifest ID using /iiif/manifest/ endpoint (strip trailing slashes from base URL)
@@ -155,13 +168,16 @@ class ConfigurableManifestGenerator(BaseGenerator):
         # Include config_file too, otherwise the viewer's refetch by id would load the manifest
         # without the metadataMappings config and lose Auteur/Thema/Periode metadata.
         from urllib.parse import quote
+
         base_url = self.presentation_api_url.rstrip("/")
         manifest_id = f"{base_url}/iiif/manifest/{entity_id}"
         query_params = []
         if self._config_file:
             query_params.append(f"config_file={self._config_file}")
         if self._image_base_url:
-            query_params.append(f"image_base_url={quote(self._image_base_url, safe='')}")
+            query_params.append(
+                f"image_base_url={quote(self._image_base_url, safe='')}"
+            )
         if query_params:
             manifest_id += "?" + "&".join(query_params)
 
@@ -210,10 +226,12 @@ class ConfigurableManifestGenerator(BaseGenerator):
             entity, mediafile=first_mediafile, parent_entity=parent_entity
         )
         if license_title:
-            metadata_items.append({
-                "label": self._make_language_map("Licentie", "nl"),
-                "value": self._make_language_map(license_title, "nl"),
-            })
+            metadata_items.append(
+                {
+                    "label": self._make_language_map("Licentie", "nl"),
+                    "value": self._make_language_map(license_title, "nl"),
+                }
+            )
         if metadata_items:
             manifest["metadata"] = metadata_items
 
@@ -248,7 +266,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         return canvases
 
-    def _build_canvas(self, entity: dict, mediafile: dict, index: int) -> Optional[dict]:
+    def _build_canvas(self, entity: dict, mediafile: dict, index: int) -> dict | None:
         """
         Build a single Canvas from a mediafile.
 
@@ -272,7 +290,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         # Build image URL (use override if set, e.g. for dashboard proxy)
         image_base = self._image_base_url or self.image_api_url_ext
-        image_url = f"{image_base}/iiif/3/{filename}"
+        image_url = f"{image_base}/iiif/3/{mediafile_id}"
 
         # Build canvas URL (strip trailing slashes from base URL)
         base_url = self.presentation_api_url.rstrip("/")
@@ -283,7 +301,9 @@ class ConfigurableManifestGenerator(BaseGenerator):
         canvas = {
             "id": canvas_id,
             "type": "Canvas",
-            "label": self._make_language_map(self._build_canvas_label(entity, mediafile, filename)),
+            "label": self._make_language_map(
+                self._build_canvas_label(entity, mediafile, filename)
+            ),
             "width": width,
             "height": height,
             "items": [
@@ -363,32 +383,37 @@ class ConfigurableManifestGenerator(BaseGenerator):
         metadata = mediafile.get("metadata")
         if (width is None or height is None) and isinstance(metadata, dict):
             width = width if width is not None else _coerce(metadata.get("img_width"))
-            height = height if height is not None else _coerce(metadata.get("img_height"))
+            height = (
+                height if height is not None else _coerce(metadata.get("img_height"))
+            )
 
         # metadata array (key/value entries)
         if width is None or height is None:
-            width = width if width is not None else _coerce(
-                self._get_entity_metadata_value(mediafile, "img_width")
+            width = (
+                width
+                if width is not None
+                else _coerce(self._get_entity_metadata_value(mediafile, "img_width"))
             )
-            height = height if height is not None else _coerce(
-                self._get_entity_metadata_value(mediafile, "img_height")
+            height = (
+                height
+                if height is not None
+                else _coerce(self._get_entity_metadata_value(mediafile, "img_height"))
             )
 
         return (width or 1000, height or 1000)
 
     def _build_canvas_label(self, entity: dict, mediafile: dict, filename: str) -> str:
         title = (
-            self._get_entity_metadata_value(entity, "title")
+            mediafile.get("original_filename")
+            or self._get_entity_metadata_value(entity, "title")
             or self._get_entity_metadata_value(mediafile, "title")
         )
-        maker = (
-            self._get_entity_metadata_value(entity, "creator")
-            or self._get_entity_metadata_value(mediafile, "creator")
-        )
-        date = (
-            self._get_entity_metadata_value(entity, "date")
-            or self._get_entity_metadata_value(mediafile, "date")
-        )
+        maker = self._get_entity_metadata_value(
+            entity, "creator"
+        ) or self._get_entity_metadata_value(mediafile, "creator")
+        date = self._get_entity_metadata_value(
+            entity, "date"
+        ) or self._get_entity_metadata_value(mediafile, "date")
 
         parts = []
         if title:
@@ -400,11 +425,10 @@ class ConfigurableManifestGenerator(BaseGenerator):
         caption = " ".join(parts).strip()
         return caption or filename
 
-    def _build_required_statement(self, mediafile: dict) -> Optional[dict]:
-        attribution = (
-            self._get_entity_metadata_value(mediafile, "attribution")
-            or self._get_entity_metadata_value(mediafile, "minimal_attribution")
-        )
+    def _build_required_statement(self, mediafile: dict) -> dict | None:
+        attribution = self._get_entity_metadata_value(
+            mediafile, "attribution"
+        ) or self._get_entity_metadata_value(mediafile, "minimal_attribution")
         if not attribution:
             mediafile_id = mediafile.get("_id") or mediafile.get("id")
             if mediafile_id:
@@ -412,10 +436,9 @@ class ConfigurableManifestGenerator(BaseGenerator):
                     full = self._get_from_collection_api(
                         f"/mediafiles/{mediafile_id}", entity=True
                     )
-                    attribution = (
-                        self._get_entity_metadata_value(full, "attribution")
-                        or self._get_entity_metadata_value(full, "minimal_attribution")
-                    )
+                    attribution = self._get_entity_metadata_value(
+                        full, "attribution"
+                    ) or self._get_entity_metadata_value(full, "minimal_attribution")
                 except Exception as e:
                     logger.warning(
                         f"Failed to fetch attribution for mediafile {mediafile_id}: {e}"
@@ -430,8 +453,8 @@ class ConfigurableManifestGenerator(BaseGenerator):
     def _build_metadata(
         self,
         entity: dict,
-        mediafile: Optional[dict] = None,
-        parent_entity: Optional[dict] = None,
+        mediafile: dict | None = None,
+        parent_entity: dict | None = None,
     ) -> list[dict]:
         """
         Build IIIF metadata array from entity using configured mappings.
@@ -467,12 +490,18 @@ class ConfigurableManifestGenerator(BaseGenerator):
                         if dedup_key in seen:
                             continue
                         seen.add(dedup_key)
-                        metadata_items.append({
-                            "label": self._make_language_map(mapping.iiif_property, lang),
-                            "value": self._make_language_map(value, lang),
-                        })
+                        metadata_items.append(
+                            {
+                                "label": self._make_language_map(
+                                    mapping.iiif_property, lang
+                                ),
+                                "value": self._make_language_map(value, lang),
+                            }
+                        )
                 elif mapping.elody_key:
-                    value = self._get_entity_metadata_value(parent_entity, mapping.elody_key)
+                    value = self._get_entity_metadata_value(
+                        parent_entity, mapping.elody_key
+                    )
                     if value:
                         vals = value if isinstance(value, list) else [value]
                         for v in vals:
@@ -488,29 +517,33 @@ class ConfigurableManifestGenerator(BaseGenerator):
                             if dedup_key in seen:
                                 continue
                             seen.add(dedup_key)
-                            metadata_items.append({
-                                "label": self._make_language_map(mapping.iiif_property, lang),
-                                "value": self._make_language_map(extracted, lang),
-                            })
+                            metadata_items.append(
+                                {
+                                    "label": self._make_language_map(
+                                        mapping.iiif_property, lang
+                                    ),
+                                    "value": self._make_language_map(extracted, lang),
+                                }
+                            )
             elif mapping.source == "relation":
                 values = self._get_relation_metadata_values(
                     entity, mapping.relation_type, mapping.related_key
                 )
                 for value in values:
-                    metadata_items.append({
-                        "label": self._make_language_map(mapping.iiif_property, lang),
-                        "value": self._make_language_map(value, lang),
-                    })
+                    metadata_items.append(
+                        {
+                            "label": self._make_language_map(
+                                mapping.iiif_property, lang
+                            ),
+                            "value": self._make_language_map(value, lang),
+                        }
+                    )
             elif mapping.source == "mediafile" and mediafile:
                 value = self._get_entity_metadata_value(mediafile, mapping.elody_key)
-                self._append_with_regex(
-                    metadata_items, seen, value, mapping, lang
-                )
+                self._append_with_regex(metadata_items, seen, value, mapping, lang)
             else:
                 value = self._get_entity_metadata_value(entity, mapping.elody_key)
-                self._append_with_regex(
-                    metadata_items, seen, value, mapping, lang
-                )
+                self._append_with_regex(metadata_items, seen, value, mapping, lang)
 
         return metadata_items
 
@@ -543,10 +576,12 @@ class ConfigurableManifestGenerator(BaseGenerator):
             if dedup_key in seen:
                 continue
             seen.add(dedup_key)
-            metadata_items.append({
-                "label": self._make_language_map(mapping.iiif_property, lang),
-                "value": self._make_language_map(extracted, lang),
-            })
+            metadata_items.append(
+                {
+                    "label": self._make_language_map(mapping.iiif_property, lang),
+                    "value": self._make_language_map(extracted, lang),
+                }
+            )
 
     def _get_relation_metadata_values(
         self, entity: dict, relation_type: str, related_key: str
@@ -602,8 +637,8 @@ class ConfigurableManifestGenerator(BaseGenerator):
         return values
 
     def _resolve_license(
-        self, entity: dict, license_cache: Optional[dict] = None
-    ) -> tuple[Optional[str], Optional[str]]:
+        self, entity: dict, license_cache: dict | None = None
+    ) -> tuple[str | None, str | None]:
         """
         Resolve an entity's license relation to (title, uri).
 
@@ -695,11 +730,13 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         return mediafiles
 
-    def _get_mediafile_filename(self, mediafile: dict) -> Optional[str]:
+    def _get_mediafile_filename(self, mediafile: dict) -> str | None:
         """Extract filename from mediafile."""
         # Direct fields
         if mediafile.get("transcode_filename"):
             return mediafile["transcode_filename"]
+        if mediafile.get("original_filename"):
+            return mediafile["original_filename"]
         if mediafile.get("filename"):
             return mediafile["filename"]
         if mediafile.get("display_filename"):
@@ -724,7 +761,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         return None
 
-    def _get_thumbnail_from_mediafile(self, mediafile: dict) -> Optional[dict]:
+    def _get_thumbnail_from_mediafile(self, mediafile: dict) -> dict | None:
         """Get thumbnail object from a mediafile."""
         filename = self._get_mediafile_filename(mediafile)
         if filename:
@@ -737,8 +774,8 @@ class ConfigurableManifestGenerator(BaseGenerator):
         return None
 
     def _extract_mapped_value(
-        self, entity: dict, iiif_property: str, mediafile: Optional[dict] = None
-    ) -> Optional[str]:
+        self, entity: dict, iiif_property: str, mediafile: dict | None = None
+    ) -> str | None:
         """Extract a value from entity (or mediafile) using configured mappings."""
         # First try configured mappings
         for mapping in self._config.metadata_mappings:
@@ -750,7 +787,9 @@ class ConfigurableManifestGenerator(BaseGenerator):
                     if values:
                         return values[0]
                 elif mapping.source == "mediafile" and mediafile:
-                    value = self._get_entity_metadata_value(mediafile, mapping.elody_key)
+                    value = self._get_entity_metadata_value(
+                        mediafile, mapping.elody_key
+                    )
                     if value:
                         return value
                 else:
@@ -767,7 +806,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         return None
 
-    def _get_entity_metadata_value(self, entity: dict, key: str) -> Optional[str]:
+    def _get_entity_metadata_value(self, entity: dict, key: str) -> str | None:
         """Get metadata value from entity in various formats."""
         # Format 1: metadata array with key/value
         for entry in entity.get("metadata", []):

@@ -7,11 +7,10 @@ following the same pattern as the collection endpoint.
 
 import logging
 
+from elody.exceptions import NotFoundException
 from flask import request
 from flask_restful import Resource
-
 from manifest_generator import ConfigurableManifestGenerator
-from elody.exceptions import NotFoundException
 
 logger = logging.getLogger(__name__)
 
@@ -46,15 +45,25 @@ class ConfigurableManifest(Resource):
 
         # Check pre-generation cache
         from resources.pre_generate import manifest_cache
+
         cache_key = (entity_id, config_file or "", image_base_url or "")
         cached = manifest_cache.get(cache_key)
         if cached is not None:
-            return cached, 200, {
-                "Content-Type": "application/ld+json",
-                "Access-Control-Allow-Origin": "*",
-            }
+            return (
+                cached,
+                200,
+                {
+                    "Content-Type": "application/ld+json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+            )
 
-        return self._generate(entity_id=entity_id, config_file=config_file, config_dict=None, image_base_url=image_base_url)
+        return self._generate(
+            entity_id=entity_id,
+            config_file=config_file,
+            config_dict=None,
+            image_base_url=image_base_url,
+        )
 
     def post(self, entity_id: str):
         """
@@ -80,9 +89,17 @@ class ConfigurableManifest(Resource):
                 "message": "Request body must contain a valid JSON config",
             }, 400
 
-        return self._generate(entity_id=entity_id, config_file=None, config_dict=config_dict)
+        return self._generate(
+            entity_id=entity_id, config_file=None, config_dict=config_dict
+        )
 
-    def _generate(self, entity_id: str, config_file: str = None, config_dict: dict = None, image_base_url: str = None):
+    def _generate(
+        self,
+        entity_id: str,
+        config_file: str | None = None,
+        config_dict: dict | None = None,
+        image_base_url: str | None = None,
+    ):
         """Internal method to generate manifest."""
         # Copy authorization header from request
         auth_header = request.headers.get("Authorization")
@@ -97,10 +114,14 @@ class ConfigurableManifest(Resource):
                 image_base_url=image_base_url,
             )
 
-            return manifest, 200, {
-                "Content-Type": "application/ld+json",
-                "Access-Control-Allow-Origin": "*",
-            }
+            return (
+                manifest,
+                200,
+                {
+                    "Content-Type": "application/ld+json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+            )
 
         except NotFoundException:
             return {
@@ -109,7 +130,7 @@ class ConfigurableManifest(Resource):
             }, 404
 
         except Exception as e:
-            logger.exception(f"Error generating manifest: {e}")
+            logger.exception("Error generating manifest")
             return {
                 "error": "Internal server error",
                 "message": str(e),

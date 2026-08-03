@@ -7,7 +7,7 @@ from iiif_prezi.factory import ManifestFactory
 
 class ManifestGenerator(BaseGenerator):
     def __add_canvas_to_sequence(self, seq, mediafile):
-        ident = mediafile.get("transcode_filename", mediafile["filename"])
+        ident = mediafile["_id"]
         # This is required for a part of the pre-authorize script in cantaloupe
         # to correctly identify the identifier. Not massively happy though,
         # feels like it should just be possible to properly url-encode it but
@@ -17,6 +17,7 @@ class ManifestGenerator(BaseGenerator):
         image = cvs.set_image_annotation(ident, iiif=True)
         image.license = self._get_license_for_mediafile(mediafile)
         image.attribution = self._get_attribution_for_mediafile(mediafile)
+
         image.resource.id = image.resource.id.replace(
             self.image_api_url, self.image_api_url_ext
         )

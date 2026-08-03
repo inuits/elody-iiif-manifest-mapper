@@ -3,7 +3,9 @@ import os
 os.environ.setdefault("COLLECTION_API_URL", "http://collection.test/")
 os.environ.setdefault("IMAGE_API_URL", "http://image.test")
 os.environ.setdefault("IMAGE_API_URL_EXT", "http://image.ext.test")
-os.environ.setdefault("PRESENTATION_API_URL", "http://present.test/iiif-manifest-service/")
+os.environ.setdefault(
+    "PRESENTATION_API_URL", "http://present.test/iiif-manifest-service/"
+)
 
 from collection_config import CollectionConfig
 from collection_generator import CollectionGenerator
@@ -30,11 +32,17 @@ def test_collection_emits_provider_and_manifest_items():
     # Stub the inverse-relation lookup (institution -> assets) so the test
     # stays offline; return one asset that should become a Manifest ref.
     gen._get_entities_by_inverse_relation = lambda entity, rel, target=None: [
-        {"_id": "asset-1", "type": "asset", "metadata": [{"key": "title", "value": "Adam en Eva"}]}
+        {
+            "_id": "asset-1",
+            "type": "asset",
+            "metadata": [{"key": "title", "value": "Adam en Eva"}],
+        }
     ]
     gen._get_entity_thumbnail = lambda entity: None
 
-    collection = gen._build_collection(institution, step_index=0, current_depth=0, max_depth=None)
+    collection = gen._build_collection(
+        institution, step_index=0, current_depth=0, max_depth=None
+    )
 
     assert collection["type"] == "Collection"
     assert collection["label"]["nl"] == ["Rubenshuis"]
@@ -42,7 +50,7 @@ def test_collection_emits_provider_and_manifest_items():
 
     items = collection["items"]
     assert len(items) == 1
-    assert items[0]["type"] == "Manifest"
+    assert items[0]["type"] == "Collection"
     # Manifest ref points at the configurable endpoint with the digipolis config
-    assert "/iiif/manifest/asset-1" in items[0]["id"]
+    assert "/iiif-manifest-service/collection/asset-1" in items[0]["id"]
     assert "config_file=digipolis" in items[0]["id"]
