@@ -48,10 +48,8 @@ from resources.pre_generate import PreGenerate
 
 api.add_resource(
     Manifest,
-    "/manifest/<string:entity_id>",
-    "/manifest/<string:entity_id>/<int:version>",
-    "/<string:entity_id>/manifest",
-    "/<string:entity_id>/manifest/<int:version>",
+    "/manifest/<string:entity_id>/2",
+    "/<string:entity_id>/manifest/2",
 )
 
 api.add_resource(
@@ -64,6 +62,10 @@ api.add_resource(
 api.add_resource(
     ConfigurableManifest,
     "/iiif/manifest/<string:entity_id>",
+    "/manifest/<string:entity_id>",
+    "/manifest/<string:entity_id>/3",
+    "/<string:entity_id>/manifest",
+    "/<string:entity_id>/manifest/3",
 )
 
 # Batch pre-generation endpoint
