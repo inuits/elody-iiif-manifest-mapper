@@ -765,11 +765,11 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
     def _get_thumbnail_from_mediafile(self, mediafile: dict) -> dict | None:
         """Get thumbnail object from a mediafile."""
-        filename = self._get_mediafile_filename(mediafile)
-        if filename:
+        mediafile_id = mediafile["_id"]
+        if mediafile_id:
             image_base = self._image_base_url or self.image_api_url_ext
             return {
-                "id": f"{image_base}/iiif/3/{filename}/full/200,/0/default.jpg",
+                "id": f"{image_base}/iiif/3/{mediafile_id}/full/200,/0/default.jpg",
                 "type": "Image",
                 "format": "image/jpeg",
             }
