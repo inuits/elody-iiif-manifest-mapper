@@ -7,10 +7,16 @@ following the same pattern as the collection endpoint.
 
 import logging
 
-from elody.exceptions import NotFoundException
-from flask import request
-from flask_restful import Resource
+import app
+from elody.exceptions import (
+    NoMediafilesException,
+    NotFoundException,
+)
+from flask import redirect, request, url_for
+from flask_restful import Resource, abort
+from manifest_exceptions import RedirectException
 from manifest_generator import ConfigurableManifestGenerator
+from werkzeug.exceptions import Forbidden, Unauthorized
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +63,35 @@ class ConfigurableManifest(Resource):
                     "Access-Control-Allow-Origin": "*",
                 },
             )
+        try:
+            return self._generate(
+                entity_id=entity_id,
+                config_file=config_file,
+                config_dict=None,
+                image_base_url=image_base_url,
+            )
 
-        return self._generate(
-            entity_id=entity_id,
-            config_file=config_file,
-            config_dict=None,
-            image_base_url=image_base_url,
-        )
+        except NoMediafilesException:
+            abort(
+                403, message=f"Entity with id {entity_id} has no accessible mediafiles."
+            )
+        except NotFoundException:
+            abort(404, message=f"Entity with id {entity_id} not found.")
+        except RedirectException as r:
+            return redirect(
+                url_for("configurablemanifest", entity_id=r.canonical_id),
+                code=301,
+            )
+        except Unauthorized:
+            abort(
+                401, message="This entity is not accessible to unauthenticated users."
+            )
+        except Forbidden:
+            abort(403, message="This entity is not accessible to unauthorized users.")
+        except Exception as ex:  # noqa: BLE001
+            message = f"Failed to generate manifest: {ex}"
+            app.logger.exception(message, exc_info=ex, stack_info=True)
+            abort(500, message=message)
 
     def post(self, entity_id: str):
         """

@@ -87,7 +87,9 @@ class ConfigurableManifestGenerator(BaseGenerator):
             self._config = self._default_config()
 
         # Fetch entity
-        entity = self._get_from_collection_api(f"/entities/{entity_id}", entity=True)
+        entity = self._get_from_collection_api(
+            f"/entities/{entity_id}", entity=True, check_canonical_uris=True
+        )
 
         # Resolve mediafiles and (optional) parent entity for metadata inheritance.
         # Originally we only looked up the parent when entity.type == "mediafile",
