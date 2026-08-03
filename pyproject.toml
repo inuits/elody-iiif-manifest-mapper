@@ -1,0 +1,74 @@
+[project]
+name = "IIIF-manifest-mapper"
+version = "0.1.0"
+description = "IIIF manifest mapper"
+readme = "README.md"
+requires-python = "~=3.12.0"
+dependencies = [
+  "aniso8601==9.0.1",
+  "blinker==1.8.2",
+  "cachetools==5.4.0",
+  "certifi==2024.7.4",
+  "charset-normalizer==3.3.2",
+  "click==8.1.7",
+  "elody==0.0.61",
+  "flask==3.0.3",
+  "flask-restful==0.3.10",
+  "frozendict==2.4.4",
+  "gunicorn==23.0.0",
+  "idna==3.7",
+  "iiif-prezi==0.3.0",
+  "iiif-prezi3==1.2.1",
+  "itsdangerous==2.2.0",
+  "jinja2==3.1.4",
+  "lxml==5.3.0",
+  "markupsafe==2.1.5",
+  "packaging==24.1",
+  "pillow==9.5.0",
+  "py-healthcheck==1.10.1",
+  "pydantic==1.10.17",
+  "pyld==2.0.4",
+  "pytz==2024.1",
+  "requests==2.32.3",
+  "sentry-sdk[flask]==2.13.0",
+  "six==1.16.0",
+  "typing-extensions==4.12.2",
+  "urllib3==2.2.2",
+  "werkzeug==3.0.3",
+]
+
+
+[tool.ty.environment]
+root = ["./api"]
+extra-paths = ["../../elody-python-sdk/src/"]
+
+
+[tool.pyright]
+include = ["./api"]
+extraPaths = ["../../elody-python-sdk/src/"]
+
+
+[tool.ruff.lint]
+extend-select = [
+  "F",   # Pyflakes: Basic logical errors and unused variables
+  "E",   # pycodestyle errors: Actual PEP8 violations (not just whitespace)
+  "I",   # isort: Keeps imports tidy automatically
+  "UP",  # pyupgrade: Keeps syntax modern (mostly auto-fixable)
+  "B",   # flake8-bugbear: Essential for catching common design flaws
+  "PTH", # flake8-use-pathlib: prefer pathlib objects over os.path
+  "RUF", # Ruff-specific: Generally sensible and high-performance rules
+  "C4",  # flake8-comprehensions: enforce better list/dict/set comprehensions
+  "LOG", # flake8-logging: catch bad logging practices (like f-strings in log messages)
+]
+ignore = [
+  "A003",   # Allow class attributes to shadow built-ins (e.g., model.id)
+  "B006",   # Allow mutables as default arg: This actually needs to be fixed since it can cause bugs
+  "RUF012", # Allow mutables as default class member: This actually needs to be fixed since it can cause bugs
+  "E722",   # Allow bare excepts (we don't have enough custom exceptions)
+  "E501",   # Ignore line length (let the formatter handle this)
+]
+[tool.pytest.ini_options]
+pythonpath = ["api"]
+
+[dependency-groups]
+dev = ["pytest>=9.1.1"]
