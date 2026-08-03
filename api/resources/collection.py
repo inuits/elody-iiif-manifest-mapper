@@ -6,11 +6,10 @@ Provides REST API for generating IIIF v3 Collections from Elody entities.
 
 import logging
 
-from flask import request
-from flask_restful import Resource
-
 from collection_generator import CollectionGenerator
 from elody.exceptions import NotFoundException
+from flask import request
+from flask_restful import Resource
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,7 @@ class Collection(Resource):
     def get(
         self,
         root_entity_id: str,
-        config_entity_id: str = None,
+        config_entity_id: str | None = None,
     ):
         """
         Generate an IIIF v3 Collection.
@@ -119,11 +118,11 @@ class Collection(Resource):
     def _generate(
         self,
         root_entity_id: str,
-        config_entity_id: str = None,
-        config_file: str = None,
-        config_dict: dict = None,
-        depth: int = None,
-        image_base_url: str = None,
+        config_entity_id: str | None = None,
+        config_file: str | None = None,
+        config_dict: dict | None = None,
+        depth: int | None = None,
+        image_base_url: str | None = None,
     ):
         """Internal method to generate collection."""
         # Copy authorization header from request
@@ -141,10 +140,14 @@ class Collection(Resource):
                 image_base_url=image_base_url,
             )
 
-            return collection, 200, {
-                "Content-Type": "application/ld+json",
-                "Access-Control-Allow-Origin": "*",
-            }
+            return (
+                collection,
+                200,
+                {
+                    "Content-Type": "application/ld+json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+            )
 
         except NotFoundException:
             return {
@@ -153,7 +156,7 @@ class Collection(Resource):
             }, 404
 
         except Exception as e:
-            logger.exception(f"Error generating collection: {e}")
+            logger.exception("Error generating collection")
             return {
                 "error": "Internal server error",
                 "message": str(e),

@@ -9,11 +9,10 @@ import logging
 import re
 import time
 
+from collection_config import CollectionConfig
 from flask import request
 from flask_restful import Resource
-
 from manifest_generator import ConfigurableManifestGenerator
-from collection_config import CollectionConfig
 
 logger = logging.getLogger(__name__)
 
@@ -58,15 +57,19 @@ class PreGenerate(Resource):
             "elapsed_seconds": round(elapsed, 1),
         }, 200
 
-    def _generate_all(self, config_file: str, image_base_url: str = None, max_parents: int = 0) -> int:
+    def _generate_all(
+        self, config_file: str, image_base_url: str | None = None, max_parents: int = 0
+    ) -> int:
         """Generate all mediafile manifests grouped by parent media entity."""
-        global manifest_cache
+        global manifest_cache  # noqa: PLW0602
 
         # Load config
         config = CollectionConfig.from_json_file(config_file)
 
         # Store image base URL
-        self.generator._image_base_url = image_base_url.rstrip("/") if image_base_url else None
+        self.generator._image_base_url = (
+            image_base_url.rstrip("/") if image_base_url else None
+        )
         self.generator._config = config
 
         # Fetch ALL mediafiles and group by parent (belongsTo relation)
@@ -111,14 +114,16 @@ class PreGenerate(Resource):
                         parent_entity, config
                     )
                     parent_cache[parent_id] = parent_metadata
-                except Exception as e:
-                    logger.warning(f"Pre-generate: failed to fetch parent {parent_id}: {e}")
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(
+                        f"Pre-generate: failed to fetch parent {parent_id}: {e}"
+                    )
                     parent_cache[parent_id] = []
 
             parent_metadata_items = parent_cache[parent_id]
 
             logger.info(
-                f"Pre-generate: [{i+1}/{len(by_parent)}] "
+                f"Pre-generate: [{i + 1}/{len(by_parent)}] "
                 f"parent {parent_id}: {len(mediafiles)} mediafiles"
             )
 
@@ -135,10 +140,12 @@ class PreGenerate(Resource):
                     )
                     manifest_cache[cache_key] = manifest
                     count += 1
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(f"Pre-generate: failed for {mf_id}: {e}")
 
-        logger.info(f"Pre-generate: done. {count} manifests cached (cache_size={len(manifest_cache)}).")
+        logger.info(
+            f"Pre-generate: done. {count} manifests cached (cache_size={len(manifest_cache)})."
+        )
         return count
 
     def _resolve_parent_metadata(
@@ -176,12 +183,14 @@ class PreGenerate(Resource):
                     if dedup_key in seen:
                         continue
                     seen.add(dedup_key)
-                    metadata_items.append({
-                        "label": self.generator._make_language_map(
-                            mapping.iiif_property, lang
-                        ),
-                        "value": self.generator._make_language_map(value, lang),
-                    })
+                    metadata_items.append(
+                        {
+                            "label": self.generator._make_language_map(
+                                mapping.iiif_property, lang
+                            ),
+                            "value": self.generator._make_language_map(value, lang),
+                        }
+                    )
                     added_for_mapping += 1
             elif mapping.elody_key:
                 value = self.generator._get_entity_metadata_value(
@@ -190,7 +199,10 @@ class PreGenerate(Resource):
                 if value:
                     vals = value if isinstance(value, list) else [value]
                     for v in vals:
-                        if mapping.max_values and added_for_mapping >= mapping.max_values:
+                        if (
+                            mapping.max_values
+                            and added_for_mapping >= mapping.max_values
+                        ):
                             break
                         extracted = str(v)
                         if mapping.regex:
@@ -203,14 +215,16 @@ class PreGenerate(Resource):
                         if dedup_key in seen:
                             continue
                         seen.add(dedup_key)
-                        metadata_items.append({
-                            "label": self.generator._make_language_map(
-                                mapping.iiif_property, lang
-                            ),
-                            "value": self.generator._make_language_map(
-                                extracted, lang
-                            ),
-                        })
+                        metadata_items.append(
+                            {
+                                "label": self.generator._make_language_map(
+                                    mapping.iiif_property, lang
+                                ),
+                                "value": self.generator._make_language_map(
+                                    extracted, lang
+                                ),
+                            }
+                        )
                         added_for_mapping += 1
 
         return metadata_items
@@ -233,7 +247,9 @@ class PreGenerate(Resource):
         license_title, license_uri = gen._resolve_license(mediafile, license_cache)
 
         # Label/summary from the mediafile itself
-        label = gen._get_entity_metadata_value(mediafile, "title") or f"Item {entity_id}"
+        label = (
+            gen._get_entity_metadata_value(mediafile, "title") or f"Item {entity_id}"
+        )
         summary = gen._get_entity_metadata_value(mediafile, "description")
 
         # Build manifest ID
@@ -241,6 +257,7 @@ class PreGenerate(Resource):
         manifest_id = f"{base_url}/iiif/manifest/{entity_id}"
         if gen._image_base_url:
             from urllib.parse import quote
+
             manifest_id += f"?image_base_url={quote(gen._image_base_url, safe='')}"
 
         manifest = {
@@ -290,16 +307,20 @@ class PreGenerate(Resource):
                 if dedup_key in seen:
                     continue
                 seen.add(dedup_key)
-                entity_metadata.append({
-                    "label": gen._make_language_map(mapping.iiif_property, lang),
-                    "value": gen._make_language_map(extracted, lang),
-                })
+                entity_metadata.append(
+                    {
+                        "label": gen._make_language_map(mapping.iiif_property, lang),
+                        "value": gen._make_language_map(extracted, lang),
+                    }
+                )
 
         if license_title:
-            entity_metadata.append({
-                "label": gen._make_language_map("Licentie", "nl"),
-                "value": gen._make_language_map(license_title, "nl"),
-            })
+            entity_metadata.append(
+                {
+                    "label": gen._make_language_map("Licentie", "nl"),
+                    "value": gen._make_language_map(license_title, "nl"),
+                }
+            )
 
         all_metadata = entity_metadata + parent_metadata_items
         if all_metadata:
@@ -325,7 +346,9 @@ class PreGenerate(Resource):
             response = self.generator._get_from_collection_api(
                 f"/entities?type={entity_type}&limit={limit}&skip={offset}"
             )
-            results = response.get("results", []) if isinstance(response, dict) else response
+            results = (
+                response.get("results", []) if isinstance(response, dict) else response
+            )
             if not results:
                 break
             all_entities.extend(results)
@@ -334,4 +357,3 @@ class PreGenerate(Resource):
             offset += limit
 
         return all_entities
-

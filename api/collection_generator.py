@@ -7,11 +7,10 @@ graphs and generates IIIF Presentation API v3 Collection resources.
 
 import logging
 import re
-from typing import Optional
+from typing import cast
 
 from base_generator import BaseGenerator
-from collection_config import CollectionConfig, TraversalStep, DEFAULT_METADATA_MAPPINGS
-from iiif_prezi3 import Collection, Manifest
+from collection_config import DEFAULT_METADATA_MAPPINGS, CollectionConfig, TraversalStep
 
 logger = logging.getLogger(__name__)
 
@@ -29,18 +28,20 @@ class CollectionGenerator(BaseGenerator):
 
     def __init__(self):
         super().__init__()
-        self._config: Optional[CollectionConfig] = None
-        self._config_file: Optional[str] = None  # Track config file for manifest URLs
-        self._image_base_url: Optional[str] = None  # Override for image URLs (e.g. dashboard proxy)
+        self._config: CollectionConfig | None = None
+        self._config_file: str | None = None  # Track config file for manifest URLs
+        self._image_base_url: str | None = (
+            None  # Override for image URLs (e.g. dashboard proxy)
+        )
 
     def generate_collection(
         self,
         root_entity_id: str,
-        config_entity_id: Optional[str] = None,
-        config_file: Optional[str] = None,
-        config_dict: Optional[dict] = None,
-        depth: Optional[int] = None,
-        image_base_url: Optional[str] = None,
+        config_entity_id: str | None = None,
+        config_file: str | None = None,
+        config_dict: dict | None = None,
+        depth: int | None = None,
+        image_base_url: str | None = None,
     ) -> dict:
         """
         Generate an IIIF v3 Collection from an Elody entity.
@@ -125,6 +126,7 @@ class CollectionGenerator(BaseGenerator):
                     # If value is a JSON string, parse it
                     if isinstance(config_value, str):
                         import json
+
                         try:
                             config_dict = json.loads(config_value)
                             return CollectionConfig.from_dict(config_dict)
@@ -181,12 +183,13 @@ class CollectionGenerator(BaseGenerator):
         entity_type = entity.get("type", "").lower()
 
         # Check each step to see if we should skip it
-        for i, step in enumerate(self._config.traversal_steps):
-            if step.inverse and step.target_type:
-                # This step finds entities of target_type pointing to parent
-                # If current entity IS that target_type, use the next step
-                if entity_type == step.target_type.lower():
-                    return i + 1
+        for i, step in enumerate(cast(CollectionConfig, self._config).traversal_steps):
+            if (
+                step.inverse
+                and step.target_type
+                and entity_type == step.target_type.lower()
+            ):
+                return i + 1
 
         # Default: start at step 0
         return 0
@@ -196,7 +199,7 @@ class CollectionGenerator(BaseGenerator):
         entity: dict,
         step_index: int,
         current_depth: int,
-        max_depth: Optional[int],
+        max_depth: int | None,
     ) -> dict:
         """
         Build an IIIF Collection from an entity.
@@ -230,7 +233,10 @@ class CollectionGenerator(BaseGenerator):
             query_params.append(f"config_file={self._config_file}")
         if self._image_base_url:
             from urllib.parse import quote
-            query_params.append(f"image_base_url={quote(self._image_base_url, safe='')}")
+
+            query_params.append(
+                f"image_base_url={quote(self._image_base_url, safe='')}"
+            )
         if query_params:
             collection_id += "?" + "&".join(query_params)
 
@@ -284,7 +290,7 @@ class CollectionGenerator(BaseGenerator):
         entity: dict,
         step_index: int,
         current_depth: int,
-        max_depth: Optional[int],
+        max_depth: int | None,
     ) -> list[dict]:
         """
         Build the items array for a collection by following relations.
@@ -367,8 +373,10 @@ class CollectionGenerator(BaseGenerator):
         return ref
 
     def _make_manifest_reference(
-        self, entity: dict, parent_entity: dict = None,
-        cached_parent_metadata: list = None,
+        self,
+        entity: dict,
+        parent_entity: dict | None = None,
+        cached_parent_metadata: list | None = None,
     ) -> dict:
         """Create a reference to a manifest for an entity.
 
@@ -387,7 +395,10 @@ class CollectionGenerator(BaseGenerator):
             query_params.append(f"config_file={self._config_file}")
         if self._image_base_url:
             from urllib.parse import quote
-            query_params.append(f"image_base_url={quote(self._image_base_url, safe='')}")
+
+            query_params.append(
+                f"image_base_url={quote(self._image_base_url, safe='')}"
+            )
         if query_params:
             manifest_url += "?" + "&".join(query_params)
 
@@ -452,10 +463,12 @@ class CollectionGenerator(BaseGenerator):
                 if dedup_key in seen:
                     continue
                 seen.add(dedup_key)
-                metadata_items.append({
-                    "label": self._make_language_map(mapping.iiif_property, lang),
-                    "value": self._make_language_map(extracted, lang),
-                })
+                metadata_items.append(
+                    {
+                        "label": self._make_language_map(mapping.iiif_property, lang),
+                        "value": self._make_language_map(extracted, lang),
+                    }
+                )
 
         return metadata_items
 
@@ -497,14 +510,22 @@ class CollectionGenerator(BaseGenerator):
                             if dedup_key in seen:
                                 continue
                             seen.add(dedup_key)
-                            metadata_items.append({
-                                "label": self._make_language_map(mapping.iiif_property, lang),
-                                "value": self._make_language_map(value, lang),
-                            })
-                    except Exception as e:
-                        logger.warning(f"Failed to fetch related entity {related_id}: {e}")
+                            metadata_items.append(
+                                {
+                                    "label": self._make_language_map(
+                                        mapping.iiif_property, lang
+                                    ),
+                                    "value": self._make_language_map(value, lang),
+                                }
+                            )
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            f"Failed to fetch related entity {related_id}: {e}"
+                        )
             elif mapping.elody_key:
-                value = self._get_entity_metadata_value(parent_entity, mapping.elody_key)
+                value = self._get_entity_metadata_value(
+                    parent_entity, mapping.elody_key
+                )
                 if value:
                     vals = value if isinstance(value, list) else [value]
                     for v in vals:
@@ -519,10 +540,14 @@ class CollectionGenerator(BaseGenerator):
                         if dedup_key in seen:
                             continue
                         seen.add(dedup_key)
-                        metadata_items.append({
-                            "label": self._make_language_map(mapping.iiif_property, lang),
-                            "value": self._make_language_map(extracted, lang),
-                        })
+                        metadata_items.append(
+                            {
+                                "label": self._make_language_map(
+                                    mapping.iiif_property, lang
+                                ),
+                                "value": self._make_language_map(extracted, lang),
+                            }
+                        )
 
         return metadata_items
 
@@ -557,13 +582,15 @@ class CollectionGenerator(BaseGenerator):
                             f"/entities/{related_id}", entity=True
                         )
                         related_entities.append(related_entity)
-                    except Exception as e:
-                        logger.warning(f"Failed to fetch related entity {related_id}: {e}")
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            f"Failed to fetch related entity {related_id}: {e}"
+                        )
 
         return related_entities
 
     def _get_entities_by_inverse_relation(
-        self, entity: dict, relation_type: str, target_type: Optional[str] = None
+        self, entity: dict, relation_type: str, target_type: str | None = None
     ) -> list[dict]:
         """
         Fetch entities that have a property/relation pointing TO the current entity.
@@ -607,20 +634,19 @@ class CollectionGenerator(BaseGenerator):
 
             # Filter out self-references (entity shouldn't appear in its own children)
             related_entities = [
-                e for e in related_entities
+                e
+                for e in related_entities
                 if (e.get("_id") or e.get("id")) != entity_id
             ]
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(
                 f"Failed to fetch entities by inverse relation {relation_type}={entity_id}: {e}"
             )
 
         return related_entities
 
-    def _extract_mapped_value(
-        self, entity: dict, iiif_property: str
-    ) -> Optional[str]:
+    def _extract_mapped_value(self, entity: dict, iiif_property: str) -> str | None:
         """
         Extract a value from entity metadata using configured mappings.
 
@@ -641,15 +667,13 @@ class CollectionGenerator(BaseGenerator):
         # Fall back to default mappings
         for default_mapping in DEFAULT_METADATA_MAPPINGS:
             if default_mapping.iiif_property == iiif_property:
-                value = self._get_item_metadata_value(
-                    entity, default_mapping.elody_key
-                )
+                value = self._get_item_metadata_value(entity, default_mapping.elody_key)
                 if value:
                     return value
 
         return None
 
-    def _get_entity_thumbnail(self, entity: dict) -> Optional[dict]:
+    def _get_entity_thumbnail(self, entity: dict) -> dict | None:
         """
         Get a thumbnail for an entity from its mediafiles.
 
@@ -696,7 +720,6 @@ class CollectionGenerator(BaseGenerator):
             # Strategy 3: For albums/contexts, try to get thumbnail from first child
             # by doing an inverse lookup for media with has_album pointing here
             if not filename and entity.get("type") in ("album", "context"):
-                entity_id = entity.get("_id") or entity.get("id")
                 child_entities = self._get_entities_by_inverse_relation(
                     entity, "has_album", "media"
                 )
@@ -716,12 +739,12 @@ class CollectionGenerator(BaseGenerator):
                     "format": "image/jpeg",
                 }
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to get thumbnail for entity: {e}")
 
         return None
 
-    def _get_mediafile_filename(self, mediafile_id: str) -> Optional[str]:
+    def _get_mediafile_filename(self, mediafile_id: str) -> str | None:
         """
         Get the filename from a mediafile entity.
 
@@ -759,12 +782,12 @@ class CollectionGenerator(BaseGenerator):
                     if "." in identifier and not identifier.startswith("MED-"):
                         return identifier
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to get mediafile {mediafile_id}: {e}")
 
         return None
 
-    def _extract_filename(self, entity: dict) -> Optional[str]:
+    def _extract_filename(self, entity: dict) -> str | None:
         """Extract filename directly from an entity dict (no API call).
 
         Handles both mediafile entities (from /entities?type=mediafile)
@@ -780,7 +803,7 @@ class CollectionGenerator(BaseGenerator):
 
         # From metadata dict
         metadata = entity.get("metadata", {})
-        if isinstance(metadata, dict):
+        if isinstance(metadata, dict):  # noqa: SIM102
             if metadata.get("filename"):
                 return metadata["filename"]
 

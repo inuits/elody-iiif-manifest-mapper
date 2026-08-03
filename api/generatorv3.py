@@ -33,9 +33,7 @@ class ManifestGeneratorv3(BaseGenerator):
 
     def __check_valid_identifier(self, mediafile):
         ident = mediafile.get("transcode_filename", mediafile["filename"])
-        if not re.match(r"^[^-]{32}-.*$", ident):
-            return False
-        return True
+        return re.match(r"^[^-]{32}-.*$", ident)
 
     def generate_manifest(self, entity_id):
         entity = self._get_from_collection_api(

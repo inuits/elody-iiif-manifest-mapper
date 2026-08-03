@@ -48,7 +48,7 @@ class Manifest(Resource):
             )
         except Forbidden:
             abort(403, message="This entity is not accessible to unauthorized users.")
-        except Exception as ex:
+        except Exception as ex:  # noqa: BLE001
             message = f"Failed to generate manifest: {ex}"
             app.logger.exception(message, exc_info=ex, stack_info=True)
             abort(500, message=message)

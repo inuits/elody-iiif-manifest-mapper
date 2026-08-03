@@ -28,9 +28,7 @@ class ManifestGenerator(BaseGenerator):
 
     def __check_valid_identifier(self, mediafile):
         ident = mediafile.get("transcode_filename", mediafile["filename"])
-        if not re.match(r"^[^-]{32}-.*$", ident):
-            return False
-        return True
+        return re.match(r"^[^-]{32}-.*$", ident)
 
     def __get_manifest_factory(self):
         fac = ManifestFactory()

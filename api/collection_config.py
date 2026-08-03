@@ -18,7 +18,6 @@ JSON Config Format:
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass
@@ -41,9 +40,9 @@ class TraversalStep:
     maps_to_iiif: str  # "Collection" | "Manifest" | "Canvas"
     order: int
     include_thumbnails: bool = True
-    max_depth: Optional[int] = None
+    max_depth: int | None = None
     inverse: bool = False
-    target_type: Optional[str] = None
+    target_type: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict) -> "TraversalStep":
@@ -91,13 +90,13 @@ class MetadataMapping:
 
     elody_key: str = ""
     iiif_property: str = ""
-    language: Optional[str] = None
-    transform: Optional[str] = None
+    language: str | None = None
+    transform: str | None = None
     source: str = "entity"
-    relation_type: Optional[str] = None
+    relation_type: str | None = None
     related_key: str = "title"
-    regex: Optional[str] = None  # Extract value via regex capture group
-    max_values: Optional[int] = None  # Limit number of values for this mapping
+    regex: str | None = None  # Extract value via regex capture group
+    max_values: int | None = None  # Limit number of values for this mapping
 
     @classmethod
     def from_dict(cls, data: dict) -> "MetadataMapping":
@@ -151,17 +150,17 @@ class CollectionConfig:
     """
 
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     iiif_version: int = 3
     traversal_steps: list[TraversalStep] = field(default_factory=list)
     metadata_mappings: list[MetadataMapping] = field(default_factory=list)
     featured_ids: list[str] = field(default_factory=list)
-    rights_uri: Optional[str] = None
-    attribution: Optional[str] = None
-    base_url: Optional[str] = None
-    viewing_direction: Optional[str] = None
-    behavior: Optional[str] = None
-    provider: Optional[list] = None
+    rights_uri: str | None = None
+    attribution: str | None = None
+    base_url: str | None = None
+    viewing_direction: str | None = None
+    behavior: str | None = None
+    provider: list | None = None
 
     @classmethod
     def from_dict(cls, data: dict) -> "CollectionConfig":
@@ -203,7 +202,9 @@ class CollectionConfig:
         )
 
     @classmethod
-    def from_json_file(cls, config_name: str, config_dir: str = None) -> "CollectionConfig":
+    def from_json_file(
+        cls, config_name: str, config_dir: str | None = None
+    ) -> "CollectionConfig":
         """
         Create CollectionConfig from a JSON configuration file.
 
@@ -221,16 +222,16 @@ class CollectionConfig:
         """
         if config_dir is None:
             # Default to config/ directory relative to this module
-            config_dir = Path(__file__).parent.parent / "config"
+            config_dir_path = Path(__file__).parent.parent / "config"
         else:
-            config_dir = Path(config_dir)
+            config_dir_path = Path(config_dir)
 
-        config_path = config_dir / f"{config_name}.json"
+        config_path = config_dir_path / f"{config_name}.json"
 
         if not config_path.exists():
             raise FileNotFoundError(f"Config file not found: {config_path}")
 
-        with open(config_path, "r", encoding="utf-8") as f:
+        with config_path.open("r", encoding="utf-8") as f:
             data = json.load(f)
 
         return cls.from_dict(data)
@@ -239,8 +240,8 @@ class CollectionConfig:
     def from_elody_entity(
         cls,
         entity: dict,
-        traversal_entities: list[dict] = None,
-        mapping_entities: list[dict] = None,
+        traversal_entities: list[dict] | None = None,
+        mapping_entities: list[dict] | None = None,
     ) -> "CollectionConfig":
         """
         Create CollectionConfig from an Elody iiifCollectionConfig entity.
@@ -290,14 +291,14 @@ class CollectionConfig:
 
     def get_mapping_for_iiif_property(
         self, iiif_property: str
-    ) -> Optional[MetadataMapping]:
+    ) -> MetadataMapping | None:
         """Get the metadata mapping for a specific IIIF property."""
         for mapping in self.metadata_mappings:
             if mapping.iiif_property == iiif_property:
                 return mapping
         return None
 
-    def get_step_for_relation(self, relation_type: str) -> Optional[TraversalStep]:
+    def get_step_for_relation(self, relation_type: str) -> TraversalStep | None:
         """Get the traversal step for a specific relation type."""
         for step in self.traversal_steps:
             if step.relation_type == relation_type:

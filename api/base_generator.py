@@ -71,9 +71,12 @@ class BaseGenerator(metaclass=Singleton):
             raise Unauthorized
         elif req.status_code == 403:
             raise Forbidden
-        if entity_id and (canonical_id := req.json().get("_id")):
-            if entity_id != canonical_id:
-                raise RedirectException(canonical_id)
+        if (
+            entity_id
+            and (canonical_id := req.json().get("_id"))
+            and entity_id != canonical_id
+        ):
+            raise RedirectException(canonical_id)
 
         return req.json()
 

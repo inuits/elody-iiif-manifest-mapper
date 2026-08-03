@@ -1,11 +1,13 @@
 import os
 
-import pytest
+import pytest  # noqa: F401
 
 os.environ.setdefault("COLLECTION_API_URL", "http://collection.test/")
 os.environ.setdefault("IMAGE_API_URL", "http://image.test")
 os.environ.setdefault("IMAGE_API_URL_EXT", "http://image.ext.test")
-os.environ.setdefault("PRESENTATION_API_URL", "http://present.test/iiif-manifest-service/")
+os.environ.setdefault(
+    "PRESENTATION_API_URL", "http://present.test/iiif-manifest-service/"
+)
 
 from collection_config import CollectionConfig
 from manifest_generator import ConfigurableManifestGenerator
@@ -70,7 +72,10 @@ def _mediafile(**overrides):
         "img_height": 6880,
         "metadata": [
             {"key": "rights", "value": "In Copyright"},
-            {"key": "attribution", "value": "Peter Paul Rubens, RH.S.164, foto: Michel Wuyts"},
+            {
+                "key": "attribution",
+                "value": "Peter Paul Rubens, RH.S.164, foto: Michel Wuyts",
+            },
         ],
     }
     mf.update(overrides)
@@ -84,7 +89,9 @@ def test_manifest_emits_viewing_direction_behavior_provider():
             "iiifVersion": 3,
             "viewingDirection": "left-to-right",
             "behavior": "paged",
-            "provider": [{"id": "https://data.antwerpen.be/agent/123", "type": "Agent"}],
+            "provider": [
+                {"id": "https://data.antwerpen.be/agent/123", "type": "Agent"}
+            ],
         }
     )
     gen = _make_generator(config)
@@ -145,9 +152,13 @@ def test_required_statement_fetches_computed_attribution_when_absent():
     gen._get_from_collection_api = lambda *a, **k: {
         "metadata": [{"key": "attribution", "value": "Collectie Stad Antwerpen, EHC"}]
     }
-    mf = _mediafile(metadata=[{"key": "rights", "value": "In Copyright"}])  # no attribution
+    mf = _mediafile(
+        metadata=[{"key": "rights", "value": "In Copyright"}]
+    )  # no attribution
     canvas = gen._build_canvas(_asset(), mf, 0)
-    assert canvas["requiredStatement"]["value"]["nl"] == ["Collectie Stad Antwerpen, EHC"]
+    assert canvas["requiredStatement"]["value"]["nl"] == [
+        "Collectie Stad Antwerpen, EHC"
+    ]
 
 
 def test_required_statement_omitted_when_no_attribution_anywhere():
@@ -172,7 +183,9 @@ def test_canvas_label_generated_from_asset_fields():
 def test_canvas_label_falls_back_to_filename_when_no_asset_metadata():
     gen = _make_generator(CollectionConfig.from_dict({"name": "d", "iiifVersion": 3}))
     gen._get_from_collection_api = lambda *a, **k: {"metadata": []}
-    canvas = gen._build_canvas({"_id": "asset-1", "metadata": []}, _mediafile(metadata=[]), 0)
+    canvas = gen._build_canvas(
+        {"_id": "asset-1", "metadata": []}, _mediafile(metadata=[]), 0
+    )
     assert canvas["label"]["nl"] == ["abc123-DIG30965.tif"]
 
 

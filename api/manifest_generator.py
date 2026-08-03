@@ -122,7 +122,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
                         rel.get("key"),
                         entity_id,
                     )
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(f"Failed to fetch parent entity {rel['key']}: {e}")
                 break
 
@@ -140,7 +140,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
         )
 
     def _build_manifest(
-        self, entity: dict, mediafiles: list[dict], parent_entity: dict = None
+        self, entity: dict, mediafiles: list[dict], parent_entity: dict | None = None
     ) -> dict:
         """
         Build an IIIF v3 Manifest from an entity and its mediafiles.
@@ -439,7 +439,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
                     attribution = self._get_entity_metadata_value(
                         full, "attribution"
                     ) or self._get_entity_metadata_value(full, "minimal_attribution")
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(
                         f"Failed to fetch attribution for mediafile {mediafile_id}: {e}"
                     )
@@ -625,7 +625,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
                         f"{related_entity.get('metadata')} properties="
                         f"{related_entity.get('properties')}"
                     )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(
                     f"{relation_type}: failed to fetch related entity {related_id} "
                     f"(source entity {entity_id}): {e}"
@@ -678,7 +678,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
                     )
                     title = self._get_entity_metadata_value(license_entity, "prefLabel")
                     cache[license_uri] = (title, license_uri)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.warning(f"Failed to fetch license {license_uri}: {e}")
                     cache[license_uri] = (None, license_uri)
             return cache[license_uri]
@@ -698,7 +698,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
             )
             if response and response.get("results"):
                 return response["results"]
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.debug(f"Mediafiles endpoint failed for {entity_id}: {e}")
 
         # Strategy 2: Get from relations (deduplicate by mediafile ID)
@@ -714,7 +714,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
                         )
                         if mediafile:
                             mediafiles.append(mediafile)
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         logger.warning(f"Failed to fetch mediafile {mediafile_id}: {e}")
 
         # Strategy 3: Use primary_mediafile_id
@@ -725,7 +725,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
                 )
                 if mediafile:
                     mediafiles.append(mediafile)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Failed to fetch primary mediafile: {e}")
 
         return mediafiles
@@ -744,7 +744,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         # From metadata dict
         metadata = mediafile.get("metadata", {})
-        if isinstance(metadata, dict):
+        if isinstance(metadata, dict):  # noqa: SIM102
             if metadata.get("filename"):
                 return metadata["filename"]
 

@@ -8,7 +8,7 @@ from flask_restful import Api
 from healthcheck import HealthCheck
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-if os.getenv("GLITCH_TIP_ENABLED", False) in ["True", "true", True]:
+if os.getenv("GLITCH_TIP_ENABLED", "False") in ["True", "true", True]:
     import sentry_sdk
     from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -36,15 +36,15 @@ def iiif_available():
 
 
 health = HealthCheck()
-if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
+if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", "True") in ["True", "true", True]:
     health.add_check(iiif_available)
 
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
-from resources.collection import Collection
-from resources.configurable_manifest import ConfigurableManifest
-from resources.manifest import Manifest
-from resources.pre_generate import PreGenerate
+from resources.collection import Collection  # noqa: E402
+from resources.configurable_manifest import ConfigurableManifest  # noqa: E402
+from resources.manifest import Manifest  # noqa: E402
+from resources.pre_generate import PreGenerate  # noqa: E402
 
 api.add_resource(
     Manifest,
