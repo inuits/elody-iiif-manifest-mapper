@@ -18,8 +18,8 @@ import argparse
 import json
 import os
 import sys
-import urllib.request
 import urllib.error
+import urllib.request
 
 
 def make_request(url, token=None):
@@ -36,7 +36,7 @@ def make_request(url, token=None):
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8") if e.fp else ""
         return {"error": str(e), "body": body}, e.code
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return {"error": str(e)}, 0
 
 
@@ -72,7 +72,9 @@ def validate_iiif_collection(data):
                 continue
             item_type = item.get("type")
             if item_type not in ("Collection", "Manifest"):
-                errors.append(f"items[{i}].type is '{item_type}', expected Collection or Manifest")
+                errors.append(
+                    f"items[{i}].type is '{item_type}', expected Collection or Manifest"
+                )
             if not item.get("id"):
                 errors.append(f"items[{i}].id is missing")
 
@@ -110,7 +112,9 @@ def validate_iiif_manifest(data):
                 errors.append(f"items[{i}] is not an object")
                 continue
             if item.get("type") != "Canvas":
-                errors.append(f"items[{i}].type is '{item.get('type')}', expected 'Canvas'")
+                errors.append(
+                    f"items[{i}].type is '{item.get('type')}', expected 'Canvas'"
+                )
 
     return errors
 
@@ -238,7 +242,7 @@ def main():
         for item in collection_data.get("items", [])[:5]:
             label = item.get("label", {})
             label_text = ""
-            for lang, vals in label.items() if isinstance(label, dict) else []:
+            for _lang, vals in label.items() if isinstance(label, dict) else []:
                 label_text = vals[0] if vals else ""
                 break
             print(f"        - [{item.get('type')}] {label_text or item.get('id', '?')}")
@@ -247,12 +251,14 @@ def main():
     elif collection_status == 404:
         report(
             f"GET /collection/{entity_id}",
-            [f"Entity not found (404). Try a different --entity-id."],
+            ["Entity not found (404). Try a different --entity-id."],
         )
     else:
         report(
             f"GET /collection/{entity_id}",
-            [f"HTTP {collection_status}: {json.dumps(collection_data, indent=2)[:300]}"],
+            [
+                f"HTTP {collection_status}: {json.dumps(collection_data, indent=2)[:300]}"
+            ],
         )
 
     # --- 4. Test Manifest Endpoint ---
@@ -267,7 +273,9 @@ def main():
     if not manifest_entity_id:
         manifest_entity_id = entity_id
 
-    manifest_url = f"{base_url}/iiif/manifest/{manifest_entity_id}?config_file={args.config_file}"
+    manifest_url = (
+        f"{base_url}/iiif/manifest/{manifest_entity_id}?config_file={args.config_file}"
+    )
     print(f"  GET {manifest_url}")
     manifest_data, manifest_status = make_request(manifest_url, args.token)
 
@@ -281,7 +289,7 @@ def main():
     elif manifest_status == 404:
         report(
             f"GET /iiif/manifest/{manifest_entity_id}",
-            [f"Entity not found (404). The entity may not have mediafiles."],
+            ["Entity not found (404). The entity may not have mediafiles."],
         )
     else:
         report(
