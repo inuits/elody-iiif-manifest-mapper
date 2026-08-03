@@ -47,6 +47,8 @@ extra-paths = ["../../elody-python-sdk/src/"]
 include = ["./api"]
 extraPaths = ["../../elody-python-sdk/src/"]
 
+[tool.ruff]
+preview = false
 
 [tool.ruff.lint]
 extend-select = [
