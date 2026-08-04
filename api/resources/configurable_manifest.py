@@ -151,6 +151,9 @@ class ConfigurableManifest(Resource):
                 },
             )
 
+        except RedirectException:
+            raise
+
         except NotFoundException:
             return {
                 "error": "Entity not found",
