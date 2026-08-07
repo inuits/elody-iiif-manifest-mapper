@@ -94,7 +94,7 @@ wheels = [
 
 [[package]]
 name = "elody"
-version = "0.0.61"
+version = "0.0.266"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -103,9 +103,9 @@ dependencies = [
     { name = "requests" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8a/2e/c1ea1d36e0cb7a6013ca1b526854632fceeaf6964e49bfacc331cb7ea3a2/elody-0.0.61.tar.gz", hash = "sha256:eeed21816376e4c4604d6f8c7dc3b58d4536108c14b39cf48b953987892c16c2", size = 31387, upload-time = "2024-03-08T14:30:17.907Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/ca/1c1f7af0e9e40224470aaf4d4c8e5ec7e8e5e9d0c73f58b8dd25c16d37ab/elody-0.0.266.tar.gz", hash = "sha256:b68489749d518f97a81adc7e1b0d792233dc94cbb8963d5946cca1f182c05b00", size = 54895, upload-time = "2026-08-07T11:45:25.708Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/58/37ff46db90b369c24f209636cf3c673d04a31683d7bfb7e984f740a90504/elody-0.0.61-py3-none-any.whl", hash = "sha256:c95a33539d8e0f8628f38ce8d0e69bab3b92e7553c67a5104826aa49d9181b0d", size = 37105, upload-time = "2024-03-08T14:30:15.671Z" },
+    { url = "https://files.pythonhosted.org/packages/71/c0/a3f25eacea5c7df863f3f7af5233aa471f81dfaeb15e3ec3c0186d18cd71/elody-0.0.266-py3-none-any.whl", hash = "sha256:d5fd75aa4420f4149a09c254266d032bab09e82896f352dab70955126d9dc3c0", size = 69522, upload-time = "2026-08-07T11:45:24.405Z" },
 ]
 
 [[package]]
@@ -219,7 +219,7 @@ requires-dist = [
     { name = "certifi", specifier = "==2024.7.4" },
     { name = "charset-normalizer", specifier = "==3.3.2" },
     { name = "click", specifier = "==8.1.7" },
-    { name = "elody", specifier = "==0.0.61" },
+    { name = "elody", specifier = "==0.0.266" },
     { name = "flask", specifier = "==3.0.3" },
     { name = "flask-restful", specifier = "==0.3.10" },
     { name = "frozendict", specifier = "==2.4.4" },

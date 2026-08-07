@@ -4,7 +4,7 @@ cachetools==5.4.0
 certifi==2024.7.4
 charset-normalizer==3.3.2
 click==8.1.7
-elody==0.0.61
+elody==0.0.266
 Flask==3.0.3
 Flask-RESTful==0.3.10
 frozendict==2.4.4
