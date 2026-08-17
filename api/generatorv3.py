@@ -14,7 +14,7 @@ class ManifestGeneratorv3(BaseGenerator):
         image_url = self.image_api_url_ext + "/iiif/3/" + id
         canvas = manifest.make_canvas(
             id=self.presentation_api_url + "canvas/" + id + ".json",
-            label=id,
+            label=self.__get_original_filename(mediafile),
             rights=self._get_license_for_mediafile(mediafile),
             requiredStatement=KeyValueString(
                 label="Attribution", value=source if source else ""
@@ -30,6 +30,14 @@ class ManifestGeneratorv3(BaseGenerator):
             },
         )
         return True
+
+    def __get_original_filename(self, mediafile):
+        original_filename = mediafile.get("original_filename")
+        if original_filename:
+            return original_filename
+        filename = mediafile["filename"]
+        match = re.match(r"^[^-]{32}-(.*)$", filename)
+        return match.group(1) if match else filename
 
     def __check_valid_identifier(self, mediafile):
         ident = mediafile.get("transcode_filename", mediafile["filename"])
