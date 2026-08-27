@@ -16,7 +16,7 @@ dependencies = [
   "flask-restful==0.3.10",
   "frozendict==2.4.4",
   "gunicorn==23.0.0",
-  "idna==3.7",
+  "idna==3.19",
   "iiif-prezi==0.3.0",
   "iiif-prezi3==3.1.1",
   "itsdangerous==2.2.0",
