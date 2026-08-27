@@ -702,8 +702,21 @@ class ConfigurableManifestGenerator(BaseGenerator):
             response = self._get_from_collection_api(
                 f"/entities/{entity_id}/mediafiles"
             )
+            results = []
             if response and response.get("results"):
-                return response["results"]
+                results.extend(response.get("results"))
+                # NOTE: the next on the /entities/{id}/mediafiles is wrong
+                # and should be fixed, but fixing it should not break this
+                # replace
+                while next := response.get("next"):
+                    next = next.replace("/filter", "")
+                    response = self._get_from_collection_api(
+                        f"/entities/{entity_id}{next}"
+                    )
+                    results.extend(response.get("results", []))
+
+                return results
+
         except Exception as e:  # noqa: BLE001
             logger.debug(f"Mediafiles endpoint failed for {entity_id}: {e}")
 
