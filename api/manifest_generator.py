@@ -14,6 +14,7 @@ from base_generator import BaseGenerator
 from collection_config import (
     DEFAULT_METADATA_MAPPINGS,
     CollectionConfig,
+    MetadataMapping,
 )
 
 logger = logging.getLogger(__name__)
@@ -163,7 +164,9 @@ class ConfigurableManifestGenerator(BaseGenerator):
             self._extract_mapped_value(entity, "label", first_mediafile)
             or f"Item {entity_id}"
         )
-        summary = self._extract_mapped_value(entity, "summary", first_mediafile)
+        summary = self._extract_mapped_value(
+            entity, "summary", first_mediafile, parent_entity
+        )
 
         # Build manifest ID using /iiif/manifest/ endpoint (strip trailing slashes from base URL)
         # Include image_base_url so runtime fetches (e.g. Clover viewer) also get proxied image URLs.
@@ -792,14 +795,31 @@ class ConfigurableManifestGenerator(BaseGenerator):
             }
         return None
 
-    def _extract_mapped_value(
-        self, entity: dict, iiif_property: str, mediafile: dict | None = None
+    def _extract_value_from_entity(
+        self, entity: dict, mapping: MetadataMapping
     ) -> str | None:
-        """Extract a value from entity (or mediafile) using configured mappings."""
-        # First try configured mappings
+        if mapping.relation_type:
+            values = self._get_relation_metadata_values(
+                entity, mapping.relation_type, mapping.related_key
+            )
+            return values[0] if values else None
+        return self._get_entity_metadata_value(entity, mapping.elody_key)
+
+    def _extract_mapped_value(
+        self,
+        entity: dict,
+        iiif_property: str,
+        mediafile: dict | None = None,
+        parent_entity: dict | None = None,
+    ) -> str | None:
+        """Extract a value from entity (or mediafile/parent) using configured mappings."""
         for mapping in self._config.metadata_mappings:
             if mapping.iiif_property.lower() == iiif_property.lower():
-                if mapping.source == "relation":
+                if mapping.source == "parent" and parent_entity:
+                    inherited = self._extract_value_from_entity(parent_entity, mapping)
+                    if inherited:
+                        return inherited
+                elif mapping.source == "relation":
                     values = self._get_relation_metadata_values(
                         entity, mapping.relation_type, mapping.related_key
                     )
@@ -816,7 +836,6 @@ class ConfigurableManifestGenerator(BaseGenerator):
                     if value:
                         return value
 
-        # Fall back to default mappings
         for mapping in DEFAULT_METADATA_MAPPINGS:
             if mapping.iiif_property.lower() == iiif_property.lower():
                 value = self._get_entity_metadata_value(entity, mapping.elody_key)

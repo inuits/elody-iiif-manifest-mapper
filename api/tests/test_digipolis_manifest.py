@@ -200,3 +200,112 @@ def test_identifiers_are_well_formed():
     assert "annotationpageLink" not in page["id"]
     assert "annotationLink" not in anno["id"]
     assert anno["target"] == canvas["id"]
+
+
+def test_summary_falls_back_to_parent_entity_for_parent_mappings():
+    config = CollectionConfig.from_dict(
+        {
+            "name": "d",
+            "iiifVersion": 3,
+            "metadataMappings": [
+                {
+                    "source": "parent",
+                    "elodyKey": "description",
+                    "iiifProperty": "summary",
+                    "language": "nl",
+                }
+            ],
+        }
+    )
+    gen = _make_generator(config)
+    entity = {"_id": "media-1", "metadata": []}
+    parent = {
+        "_id": "asset-1",
+        "metadata": [{"key": "description", "value": "Dit is een beschrijving"}],
+    }
+
+    manifest = gen._build_manifest(entity, [_mediafile()], parent_entity=parent)
+
+    assert manifest["summary"] == {"nl": ["Dit is een beschrijving"]}
+
+
+def test_summary_from_parent_relation_mapping():
+    config = CollectionConfig.from_dict(
+        {
+            "name": "d",
+            "metadataMappings": [
+                {
+                    "source": "parent",
+                    "relationType": "hasInstitution",
+                    "relatedKey": "name",
+                    "iiifProperty": "summary",
+                }
+            ],
+        }
+    )
+    gen = _make_generator(config)
+    gen._get_relation_metadata_values = lambda entity, rel, key: (
+        ["Rubenshuis"] if entity["_id"] == "asset-1" else []
+    )
+
+    manifest = gen._build_manifest(
+        {"_id": "media-1", "metadata": []},
+        [_mediafile()],
+        parent_entity={"_id": "asset-1", "metadata": []},
+    )
+
+    assert manifest["summary"] == {"nl": ["Rubenshuis"]}
+
+
+def test_parent_summary_mapping_still_reads_entity_without_parent():
+    config = CollectionConfig.from_dict(
+        {
+            "name": "d",
+            "metadataMappings": [
+                {
+                    "source": "parent",
+                    "elodyKey": "description",
+                    "iiifProperty": "summary",
+                }
+            ],
+        }
+    )
+    gen = _make_generator(config)
+    entity = {
+        "_id": "asset-1",
+        "metadata": [{"key": "description", "value": "Eigen beschrijving"}],
+    }
+
+    manifest = gen._build_manifest(entity, [_mediafile()])
+
+    assert manifest["summary"] == {"nl": ["Eigen beschrijving"]}
+
+
+def test_label_is_unaffected_by_parent_entity():
+    config = CollectionConfig.from_dict(
+        {
+            "name": "d",
+            "metadataMappings": [
+                {"elodyKey": "title", "iiifProperty": "label"},
+                {
+                    "source": "parent",
+                    "elodyKey": "description",
+                    "iiifProperty": "summary",
+                },
+            ],
+        }
+    )
+    gen = _make_generator(config)
+    entity = {"_id": "media-1", "metadata": [{"key": "title", "value": "Eigen titel"}]}
+    parent = {
+        "_id": "asset-1",
+        "metadata": [
+            {"key": "title", "value": "Titel van ouder"},
+            {"key": "description", "value": "Dit is een beschrijving"},
+        ],
+    }
+
+    manifest = gen._build_manifest(entity, [_mediafile()], parent_entity=parent)
+
+    assert manifest["label"] == {"nl": ["Eigen titel"]}
+    assert manifest["summary"] == {"nl": ["Dit is een beschrijving"]}
