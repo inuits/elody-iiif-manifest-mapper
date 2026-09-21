@@ -8,6 +8,8 @@ from werkzeug.exceptions import Forbidden, Unauthorized
 
 allow_static_jwt = os.getenv("ALLOW_STATIC_JWT", "false").lower() in {"true", "1"}
 
+THUMBNAIL_WIDTH = 200
+
 
 class Singleton(type):
     _instances = {}
@@ -35,6 +37,54 @@ class BaseGenerator(metaclass=Singleton):
         self.session = requests.session()
         if static_jwt and allow_static_jwt:
             self.headers["Authorization"] = f"Bearer {static_jwt}"
+
+    def _build_thumbnail(self, image_url: str, width: int, height: int) -> dict:
+        thumbnail_height = round(THUMBNAIL_WIDTH * height / width) if width else None
+        return {
+            "id": f"{image_url}/full/{THUMBNAIL_WIDTH},/0/default.jpg",
+            "type": "Image",
+            "format": "image/jpeg",
+            "width": THUMBNAIL_WIDTH,
+            "height": thumbnail_height or THUMBNAIL_WIDTH,
+            "service": [
+                {
+                    "id": image_url,
+                    "type": "ImageService3",
+                    "profile": "level1",
+                }
+            ],
+        }
+
+    def _get_dimensions(self, mediafile: dict) -> tuple:
+        def _coerce(value):
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return None
+
+        # Top-level fields
+        width = _coerce(mediafile.get("img_width"))
+        height = _coerce(mediafile.get("img_height"))
+
+        # metadata dict
+        metadata = mediafile.get("metadata")
+        if (width is None or height is None) and isinstance(metadata, dict):
+            width = width if width is not None else _coerce(metadata.get("img_width"))
+            height = (
+                height if height is not None else _coerce(metadata.get("img_height"))
+            )
+
+        # metadata array (key/value entries)
+        if isinstance(metadata, list):
+            for entry in metadata:
+                if not isinstance(entry, dict):
+                    continue
+                if width is None and entry.get("key") == "img_width":
+                    width = _coerce(entry.get("value"))
+                if height is None and entry.get("key") == "img_height":
+                    height = _coerce(entry.get("value"))
+
+        return (width or 1000, height or 1000)
 
     def _get_attribution_for_mediafile(self, mediafile):
         ret = f"source: {self._get_item_metadata_value(mediafile, 'source')}"

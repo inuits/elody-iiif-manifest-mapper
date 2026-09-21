@@ -340,13 +340,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
                     ],
                 }
             ],
-            "thumbnail": [
-                {
-                    "id": f"{image_url}/full/200,/0/default.jpg",
-                    "type": "Image",
-                    "format": "image/jpeg",
-                }
-            ],
+            "thumbnail": [self._build_thumbnail(image_url, width, height)],
             # Download target for the Clover viewer. Clover only renders its
             # download control from a manifest/canvas `rendering` array (it does
             # not derive downloads from the image body), so expose the full-res
@@ -372,40 +366,6 @@ class ConfigurableManifestGenerator(BaseGenerator):
             canvas["requiredStatement"] = required_statement
 
         return canvas
-
-    def _get_dimensions(self, mediafile: dict) -> tuple:
-        def _coerce(value):
-            try:
-                return int(value)
-            except (TypeError, ValueError):
-                return None
-
-        # Top-level fields
-        width = _coerce(mediafile.get("img_width"))
-        height = _coerce(mediafile.get("img_height"))
-
-        # metadata dict
-        metadata = mediafile.get("metadata")
-        if (width is None or height is None) and isinstance(metadata, dict):
-            width = width if width is not None else _coerce(metadata.get("img_width"))
-            height = (
-                height if height is not None else _coerce(metadata.get("img_height"))
-            )
-
-        # metadata array (key/value entries)
-        if width is None or height is None:
-            width = (
-                width
-                if width is not None
-                else _coerce(self._get_entity_metadata_value(mediafile, "img_width"))
-            )
-            height = (
-                height
-                if height is not None
-                else _coerce(self._get_entity_metadata_value(mediafile, "img_height"))
-            )
-
-        return (width or 1000, height or 1000)
 
     def _build_canvas_label(self, entity: dict, mediafile: dict, filename: str) -> str:
         title = (
@@ -788,11 +748,10 @@ class ConfigurableManifestGenerator(BaseGenerator):
         mediafile_id = mediafile["_id"]
         if mediafile_id:
             image_base = self._image_base_url or self.image_api_url_ext
-            return {
-                "id": f"{image_base}/iiif/3/{mediafile_id}/full/200,/0/default.jpg",
-                "type": "Image",
-                "format": "image/jpeg",
-            }
+            width, height = self._get_dimensions(mediafile)
+            return self._build_thumbnail(
+                f"{image_base}/iiif/3/{mediafile_id}", width, height
+            )
         return None
 
     def _extract_value_from_entity(

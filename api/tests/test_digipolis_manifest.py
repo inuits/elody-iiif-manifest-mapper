@@ -309,3 +309,62 @@ def test_label_is_unaffected_by_parent_entity():
 
     assert manifest["label"] == {"nl": ["Eigen titel"]}
     assert manifest["summary"] == {"nl": ["Dit is een beschrijving"]}
+
+
+def test_canvas_thumbnail_has_dimensions_and_image_service():
+    gen = _make_generator(CollectionConfig.from_dict({"name": "d", "iiifVersion": 3}))
+
+    thumbnail = gen._build_canvas(_asset(), _mediafile(), 0)["thumbnail"][0]
+
+    assert thumbnail["width"] == 200
+    assert thumbnail["height"] == 124
+    assert thumbnail["service"] == [
+        {
+            "id": "http://image.ext.test/iiif/3/mf-1",
+            "type": "ImageService3",
+            "profile": "level1",
+        }
+    ]
+
+
+def test_manifest_thumbnail_has_dimensions_and_image_service():
+    gen = _make_generator(CollectionConfig.from_dict({"name": "d", "iiifVersion": 3}))
+
+    manifest = gen._build_manifest(_asset(), [_mediafile()])
+    thumbnail = manifest["thumbnail"][0]
+
+    assert (
+        thumbnail["id"] == "http://image.ext.test/iiif/3/mf-1/full/200,/0/default.jpg"
+    )
+    assert thumbnail["format"] == "image/jpeg"
+    assert thumbnail["width"] == 200
+    assert thumbnail["height"] == 124
+    assert thumbnail["service"] == [
+        {
+            "id": "http://image.ext.test/iiif/3/mf-1",
+            "type": "ImageService3",
+            "profile": "level1",
+        }
+    ]
+
+
+def test_thumbnail_height_falls_back_to_square_without_dimensions():
+    gen = _make_generator(CollectionConfig.from_dict({"name": "d", "iiifVersion": 3}))
+    mediafile = _mediafile()
+    del mediafile["img_width"]
+    del mediafile["img_height"]
+
+    thumbnail = gen._build_manifest(_asset(), [mediafile])["thumbnail"][0]
+
+    assert thumbnail["width"] == 200
+    assert thumbnail["height"] == 200
+
+
+def test_thumbnail_service_uses_image_base_url_override():
+    gen = _make_generator(CollectionConfig.from_dict({"name": "d", "iiifVersion": 3}))
+    gen._image_base_url = "http://dashboard.test/proxy"
+
+    thumbnail = gen._build_manifest(_asset(), [_mediafile()])["thumbnail"][0]
+
+    assert thumbnail["id"].startswith("http://dashboard.test/proxy/iiif/3/mf-1")
+    assert thumbnail["service"][0]["id"] == "http://dashboard.test/proxy/iiif/3/mf-1"

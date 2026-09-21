@@ -691,21 +691,18 @@ class CollectionGenerator(BaseGenerator):
         try:
             filename = None
 
+            mediafile = None
+
             # Strategy 0: If entity IS a mediafile, extract filename from dict (no API call)
             if entity.get("type") == "mediafile":
+                mediafile = entity
                 filename = self._extract_filename(entity)
-                if filename:
-                    image_base = self._image_base_url or self.image_api_url_ext
-                    return {
-                        "id": f"{image_base}/iiif/3/{filename}/full/200,/0/default.jpg",
-                        "type": "Image",
-                        "format": "image/jpeg",
-                    }
 
             # Strategy 1: Check for primary_mediafile_id
             primary_mediafile_id = entity.get("primary_mediafile_id")
-            if primary_mediafile_id:
-                filename = self._get_mediafile_filename(primary_mediafile_id)
+            if not filename and primary_mediafile_id:
+                mediafile = self._get_mediafile(primary_mediafile_id)
+                filename = self._extract_mediafile_filename(mediafile)
 
             # Strategy 2: Check relations array for hasMediafile
             if not filename:
@@ -713,7 +710,8 @@ class CollectionGenerator(BaseGenerator):
                     if relation.get("type") in ("hasMediafile", "hasPrimaryMediafile"):
                         mediafile_id = relation.get("key")
                         if mediafile_id:
-                            filename = self._get_mediafile_filename(mediafile_id)
+                            mediafile = self._get_mediafile(mediafile_id)
+                            filename = self._extract_mediafile_filename(mediafile)
                             if filename:
                                 break
 
@@ -733,57 +731,70 @@ class CollectionGenerator(BaseGenerator):
 
             if filename:
                 image_base = self._image_base_url or self.image_api_url_ext
-                return {
-                    "id": f"{image_base}/iiif/3/{filename}/full/200,/0/default.jpg",
-                    "type": "Image",
-                    "format": "image/jpeg",
-                }
+                width, height = self._get_dimensions(mediafile or {})
+                return self._build_thumbnail(
+                    f"{image_base}/iiif/3/{filename}", width, height
+                )
 
         except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to get thumbnail for entity: {e}")
 
         return None
 
-    def _get_mediafile_filename(self, mediafile_id: str) -> str | None:
+    def _get_mediafile(self, mediafile_id: str) -> dict | None:
         """
-        Get the filename from a mediafile entity.
+        Fetch a mediafile entity.
 
         Args:
             mediafile_id: ID of the mediafile entity
 
         Returns:
-            Filename string or None
+            Mediafile dictionary or None
         """
         try:
-            mediafile = self._get_from_collection_api(
+            return self._get_from_collection_api(
                 f"/mediafiles/{mediafile_id}", entity=True
             )
-            if mediafile:
-                # Try different locations for filename
-                # 1. Direct metadata.filename
-                metadata = mediafile.get("metadata", {})
-                if isinstance(metadata, dict):
-                    filename = metadata.get("filename")
-                    if filename:
-                        return filename
-
-                # 2. From metadata array (Elody format)
-                if isinstance(metadata, list):
-                    for m in metadata:
-                        if m.get("key") == "filename":
-                            return m.get("value")
-
-                # 3. display_filename field
-                if mediafile.get("display_filename"):
-                    return mediafile.get("display_filename")
-
-                # 4. From identifiers (often contains filename)
-                for identifier in mediafile.get("identifiers", []):
-                    if "." in identifier and not identifier.startswith("MED-"):
-                        return identifier
-
         except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to get mediafile {mediafile_id}: {e}")
+
+        return None
+
+    def _extract_mediafile_filename(self, mediafile: dict | None) -> str | None:
+        """
+        Get the filename from a mediafile entity.
+
+        Args:
+            mediafile: The mediafile entity
+
+        Returns:
+            Filename string or None
+        """
+        if not mediafile:
+            return None
+
+        # Try different locations for filename
+        # 1. Direct metadata.filename
+        metadata = mediafile.get("metadata", {})
+        if isinstance(metadata, dict):
+            filename = metadata.get("filename")
+            if filename:
+                return filename
+
+        # 2. From metadata array (Elody format)
+        if isinstance(metadata, list):
+            for m in metadata:
+                if m.get("key") == "filename":
+                    return m.get("value")
+
+        # 3. display_filename field
+        if mediafile.get("display_filename"):
+            return mediafile.get("display_filename")
+
+        # 4. From identifiers (often contains filename)
+        for identifier in mediafile.get("identifiers", []):
+            if "." in identifier and not identifier.startswith("MED-"):
+                return identifier
 
         return None
 
