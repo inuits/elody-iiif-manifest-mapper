@@ -492,35 +492,24 @@ class CollectionGenerator(BaseGenerator):
             lang = mapping.language or "nl"
 
             if mapping.relation_type:
-                for relation in parent_entity.get("relations", []):
-                    if relation.get("type") != mapping.relation_type:
-                        continue
-                    related_id = relation.get("key")
-                    if not related_id:
-                        continue
-                    try:
-                        related_entity = self._get_from_collection_api(
-                            f"/entities/{related_id}", entity=True
-                        )
-                        value = self._get_entity_metadata_value(
-                            related_entity, mapping.related_key
-                        )
-                        if value:
-                            dedup_key = (mapping.iiif_property, value)
-                            if dedup_key in seen:
-                                continue
-                            seen.add(dedup_key)
-                            metadata_items.append(
-                                {
-                                    "label": self._make_language_map(
-                                        mapping.iiif_property, lang
-                                    ),
-                                    "value": self._make_language_map(value, lang),
-                                }
-                            )
-                    except Exception as e:  # noqa: BLE001
-                        logger.warning(
-                            f"Failed to fetch related entity {related_id}: {e}"
+                for _, related_entity in self._iter_related_entities(
+                    parent_entity, mapping.relation_type, mapping.recursive
+                ):
+                    value = self._get_entity_metadata_value(
+                        related_entity, mapping.related_key
+                    )
+                    if value:
+                        dedup_key = (mapping.iiif_property, value)
+                        if dedup_key in seen:
+                            continue
+                        seen.add(dedup_key)
+                        metadata_items.append(
+                            {
+                                "label": self._make_language_map(
+                                    mapping.iiif_property, lang
+                                ),
+                                "value": self._make_language_map(value, lang),
+                            }
                         )
             elif mapping.elody_key:
                 value = self._get_entity_metadata_value(
@@ -613,24 +602,33 @@ class CollectionGenerator(BaseGenerator):
         entity_id = entity.get("_id") or entity.get("id")
         related_entities = []
 
-        try:
-            # Build query parameters for collection API
-            # Search for entities where the relation_type property contains this entity's ID
-            params = {
-                f"property_{relation_type}": entity_id,
-                "limit": 500,
+        # GET /entities silently ignores property_<relation> params (it just
+        # returns the first page of every entity of target_type), so use the
+        # filter endpoint with an exact match on the relation key instead.
+        query = []
+        if target_type:
+            query.append({"type": "type", "value": target_type})
+        query.append(
+            {
+                "type": "selection",
+                "key": f"relations.{relation_type}.key",
+                "value": entity_id,
+                "match_exact": True,
             }
-            if target_type:
-                params["type"] = target_type
+        )
 
-            # Query collection API for entities with this property value
-            query_string = "&".join(f"{k}={v}" for k, v in params.items())
-            response = self._get_from_collection_api(f"/entities?{query_string}")
-
-            if response and "results" in response:
-                related_entities = response["results"]
-            elif response and isinstance(response, list):
-                related_entities = response
+        try:
+            limit = 500
+            skip = 0
+            while True:
+                response = self._post_to_collection_api(
+                    f"/entities/filter?skip={skip}&limit={limit}", query
+                )
+                page = response.get("results", []) if response else []
+                related_entities.extend(page)
+                if len(page) < limit:
+                    break
+                skip += limit
 
             # Filter out self-references (entity shouldn't appear in its own children)
             related_entities = [

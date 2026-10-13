@@ -452,7 +452,10 @@ class ConfigurableManifestGenerator(BaseGenerator):
             if mapping.source == "parent" and parent_entity:
                 if mapping.relation_type:
                     values = self._get_relation_metadata_values(
-                        parent_entity, mapping.relation_type, mapping.related_key
+                        parent_entity,
+                        mapping.relation_type,
+                        mapping.related_key,
+                        recursive=mapping.recursive,
                     )
                     for value in values:
                         dedup_key = (mapping.iiif_property, value)
@@ -496,7 +499,10 @@ class ConfigurableManifestGenerator(BaseGenerator):
                             )
             elif mapping.source == "relation":
                 values = self._get_relation_metadata_values(
-                    entity, mapping.relation_type, mapping.related_key
+                    entity,
+                    mapping.relation_type,
+                    mapping.related_key,
+                    recursive=mapping.recursive,
                 )
                 for value in values:
                     metadata_items.append(
@@ -553,7 +559,11 @@ class ConfigurableManifestGenerator(BaseGenerator):
             )
 
     def _get_relation_metadata_values(
-        self, entity: dict, relation_type: str, related_key: str
+        self,
+        entity: dict,
+        relation_type: str,
+        related_key: str,
+        recursive: bool = False,
     ) -> list[str]:
         """
         Get metadata values from related entities.
@@ -562,42 +572,33 @@ class ConfigurableManifestGenerator(BaseGenerator):
             entity: The source entity containing relations
             relation_type: The relation type to match (e.g., "hasCreator")
             related_key: The metadata key to extract from related entities
+            recursive: Also follow relation_type up from each related entity
+                (e.g. leaf album -> parent album -> top-level album)
 
         Returns:
-            List of metadata values from matching related entities
+            List of metadata values from matching related entities, nearest first
         """
         values = []
         entity_id = entity.get("_id") or entity.get("id")
-        matched_any = False
-        for relation in entity.get("relations", []):
-            if relation.get("type") != relation_type:
-                continue
-            matched_any = True
-            related_id = relation.get("key")
-            if not related_id:
-                continue
-            try:
-                related_entity = self._get_from_collection_api(
-                    f"/entities/{related_id}", entity=True
+        matched_any = any(
+            r.get("type") == relation_type for r in entity.get("relations", []) or []
+        )
+        for related_id, related_entity in self._iter_related_entities(
+            entity, relation_type, recursive
+        ):
+            value = self._get_entity_metadata_value(related_entity, related_key)
+            if value:
+                values.append(value)
+                logger.debug(
+                    f"{relation_type}: resolved '{related_key}'={value!r} "
+                    f"from related entity {related_id} (source entity {entity_id})"
                 )
-                value = self._get_entity_metadata_value(related_entity, related_key)
-                if value:
-                    values.append(value)
-                    logger.debug(
-                        f"{relation_type}: resolved '{related_key}'={value!r} "
-                        f"from related entity {related_id} (source entity {entity_id})"
-                    )
-                else:
-                    logger.warning(
-                        f"{relation_type}: related entity {related_id} (source entity "
-                        f"{entity_id}) has no '{related_key}' value — metadata="
-                        f"{related_entity.get('metadata')} properties="
-                        f"{related_entity.get('properties')}"
-                    )
-            except Exception as e:  # noqa: BLE001
+            else:
                 logger.warning(
-                    f"{relation_type}: failed to fetch related entity {related_id} "
-                    f"(source entity {entity_id}): {e}"
+                    f"{relation_type}: related entity {related_id} (source entity "
+                    f"{entity_id}) has no '{related_key}' value — metadata="
+                    f"{related_entity.get('metadata')} properties="
+                    f"{related_entity.get('properties')}"
                 )
         if not matched_any:
             logger.debug(
@@ -780,7 +781,10 @@ class ConfigurableManifestGenerator(BaseGenerator):
                         return inherited
                 elif mapping.source == "relation":
                     values = self._get_relation_metadata_values(
-                        entity, mapping.relation_type, mapping.related_key
+                        entity,
+                        mapping.relation_type,
+                        mapping.related_key,
+                        recursive=mapping.recursive,
                     )
                     if values:
                         return values[0]

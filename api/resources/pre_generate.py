@@ -174,7 +174,10 @@ class PreGenerate(Resource):
             if mapping.relation_type:
                 # Follow relations on parent (e.g. hasCreator)
                 values = self.generator._get_relation_metadata_values(
-                    parent_entity, mapping.relation_type, mapping.related_key
+                    parent_entity,
+                    mapping.relation_type,
+                    mapping.related_key,
+                    recursive=mapping.recursive,
                 )
                 for value in values:
                     if mapping.max_values and added_for_mapping >= mapping.max_values:

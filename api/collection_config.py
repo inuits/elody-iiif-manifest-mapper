@@ -86,6 +86,8 @@ class MetadataMapping:
         transform: Optional transformation to apply (e.g., "uppercase")
         relation_type: For source="relation", the relation type to follow (e.g., "hasCreator")
         related_key: For source="relation", the metadata key on the related entity (default: "title")
+        recursive: Also follow relation_type from each related entity, collecting
+            values up the whole chain (e.g. sub-album -> parent album -> ...)
     """
 
     elody_key: str = ""
@@ -97,6 +99,7 @@ class MetadataMapping:
     related_key: str = "title"
     regex: str | None = None  # Extract value via regex capture group
     max_values: int | None = None  # Limit number of values for this mapping
+    recursive: bool = False
 
     @classmethod
     def from_dict(cls, data: dict) -> "MetadataMapping":
@@ -111,6 +114,7 @@ class MetadataMapping:
             related_key=data.get("relatedKey", "title"),
             regex=data.get("regex"),
             max_values=data.get("maxValues"),
+            recursive=bool(data.get("recursive", False)),
         )
 
     @classmethod

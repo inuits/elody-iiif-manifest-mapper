@@ -1,4 +1,6 @@
+import logging
 import os
+from collections.abc import Iterator
 
 import requests
 from elody.exceptions import NoMediafilesException, NotFoundException
@@ -9,6 +11,7 @@ from werkzeug.exceptions import Forbidden, Unauthorized
 allow_static_jwt = os.getenv("ALLOW_STATIC_JWT", "false").lower() in {"true", "1"}
 
 THUMBNAIL_WIDTH = 200
+logger = logging.getLogger(__name__)
 
 
 class Singleton(type):
@@ -129,6 +132,61 @@ class BaseGenerator(metaclass=Singleton):
             raise RedirectException(canonical_id)
 
         return req.json()
+
+    def _post_to_collection_api(self, endpoint, body):
+        # Forward the inbound headers like _get_from_collection_api does, minus
+        # the ones describing the inbound request's own body/host.
+        forwarded = {
+            k: v
+            for k, v in request.headers.items()
+            if k.lower() not in {"host", "content-length", "content-type"}
+        }
+        req = self.session.post(
+            f"{self.collection_api_url}{endpoint}",
+            json=body,
+            headers={**self.headers, **forwarded},
+        )
+        if req.status_code == 401:
+            raise Unauthorized
+        elif req.status_code == 403:
+            raise Forbidden
+        req.raise_for_status()
+        return req.json()
+
+    def _iter_related_entities(
+        self, entity: dict, relation_type: str, recursive: bool = False
+    ) -> Iterator[tuple[str, dict]]:
+        """
+        Yield (id, entity) for each entity that `entity` points at via
+        relation_type, nearest first. With recursive, keep following
+        relation_type from each yielded entity (e.g. sub-album -> parent
+        album -> ...). Each entity is yielded at most once, so cycles end.
+        Entities that fail to fetch are logged and skipped.
+        """
+        visited = {entity.get("_id") or entity.get("id")}
+        queue = [entity]
+        while queue:
+            current = queue.pop(0)
+            for relation in current.get("relations", []) or []:
+                if relation.get("type") != relation_type:
+                    continue
+                related_id = relation.get("key")
+                if not related_id or related_id in visited:
+                    continue
+                visited.add(related_id)
+                try:
+                    related = self._get_from_collection_api(
+                        f"/entities/{related_id}", entity=True
+                    )
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(
+                        f"{relation_type}: failed to fetch related entity "
+                        f"{related_id}: {e}"
+                    )
+                    continue
+                yield related_id, related
+                if recursive:
+                    queue.append(related)
 
     def _get_item_metadata_value(self, item, key, include_lang=False):
         for entry in [x for x in item.get("metadata", []) if x["key"] == key]:
