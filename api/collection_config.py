@@ -16,6 +16,7 @@ JSON Config Format:
 """
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -151,6 +152,10 @@ class CollectionConfig:
         viewing_direction: Manifest viewingDirection (e.g. "left-to-right")
         behavior: Manifest behavior (e.g. "paged")
         provider: IIIF provider block (list of Agent dicts)
+        relation_filter_key: Filter key template used to find entities whose
+            relation points at a given entity via POST /entities/filter.
+            Supports {relation} (e.g. "hasAlbum") and {relation_snake}
+            (e.g. "has_album").
     """
 
     name: str
@@ -165,6 +170,13 @@ class CollectionConfig:
     viewing_direction: str | None = None
     behavior: str | None = None
     provider: list | None = None
+    relation_filter_key: str = "relations.{relation}.key"
+
+    def relation_filter_key_for(self, relation_type: str) -> str:
+        relation_snake = re.sub(r"(?<!^)(?=[A-Z])", "_", relation_type).lower()
+        return self.relation_filter_key.format(
+            relation=relation_type, relation_snake=relation_snake
+        )
 
     @classmethod
     def from_dict(cls, data: dict) -> "CollectionConfig":
@@ -203,6 +215,9 @@ class CollectionConfig:
             viewing_direction=data.get("viewingDirection"),
             behavior=data.get("behavior"),
             provider=data.get("provider"),
+            relation_filter_key=data.get(
+                "relationFilterKey", "relations.{relation}.key"
+            ),
         )
 
     @classmethod

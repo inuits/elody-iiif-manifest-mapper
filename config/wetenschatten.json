@@ -5,6 +5,7 @@
   "rightsUri": "http://creativecommons.org/licenses/by-nc-sa/4.0/",
   "attribution": "Vlaams Instituut voor de Zee (VLIZ)",
   "baseUrl": "http://localhost:8080",
+  "relationFilterKey": "properties.{relation_snake}.value",
 
   "traversalSteps": [
     {

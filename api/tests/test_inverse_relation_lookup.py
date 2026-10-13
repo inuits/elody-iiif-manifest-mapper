@@ -8,6 +8,7 @@ os.environ.setdefault(
 )
 
 import pytest
+from collection_config import CollectionConfig
 from collection_generator import CollectionGenerator
 from flask import Flask
 
@@ -38,11 +39,13 @@ class _FakeSession:
 
 
 @pytest.fixture
-def gen():
+def gen(monkeypatch):
     generator = CollectionGenerator()
     # CollectionGenerator is a singleton and other tests stub this method on
     # the instance; drop that so the real implementation is exercised.
     generator.__dict__.pop("_get_entities_by_inverse_relation", None)
+    # A config without relationFilterKey, i.e. the default relation key.
+    monkeypatch.setattr(generator, "_config", CollectionConfig(name="test"))
     with Flask(__name__).test_request_context():
         yield generator
 
@@ -106,3 +109,28 @@ def test_inverse_lookup_drops_self_references(gen, monkeypatch):
     assert [e["_id"] for e in result] == ["media-9"]
     # No target type → no type filter in the query
     assert all(f.get("type") != "type" for f in session.calls[0]["json"])
+
+
+def test_relation_filter_key_defaults_to_relations_key():
+    assert CollectionConfig.from_dict({}).relation_filter_key == (
+        "relations.{relation}.key"
+    )
+
+
+def test_inverse_lookup_uses_configured_relation_filter_key(gen, monkeypatch):
+    # VLIZ stores relations as properties.<snake_case_relation>.value, which
+    # the wetenschatten config expresses as a relationFilterKey template.
+    monkeypatch.setattr(
+        gen, "_config", CollectionConfig.from_json_file("wetenschatten")
+    )
+    session = _FakeSession([_entities("media", 1)])
+    monkeypatch.setattr(gen, "session", session)
+
+    gen._get_entities_by_inverse_relation({"_id": "album-1"}, "hasAlbum", "media")
+
+    assert {
+        "type": "selection",
+        "key": "properties.has_album.value",
+        "value": "album-1",
+        "match_exact": True,
+    } in session.calls[0]["json"]

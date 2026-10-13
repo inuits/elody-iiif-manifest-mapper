@@ -70,6 +70,9 @@ def test_wetenschatten_album_mapping_is_recursive():
 @pytest.fixture
 def manifest_gen(monkeypatch):
     gen = ConfigurableManifestGenerator()
+    # ConfigurableManifestGenerator is a singleton and other tests stub this
+    # method on the instance; drop that so the real implementation is exercised.
+    gen.__dict__.pop("_get_relation_metadata_values", None)
     monkeypatch.setattr(gen, "_get_from_collection_api", _fake_get)
     return gen
 

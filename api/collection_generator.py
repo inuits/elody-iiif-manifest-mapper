@@ -604,14 +604,15 @@ class CollectionGenerator(BaseGenerator):
 
         # GET /entities silently ignores property_<relation> params (it just
         # returns the first page of every entity of target_type), so use the
-        # filter endpoint with an exact match on the relation key instead.
+        # filter endpoint with an exact match on the relation key instead. Where
+        # that key lives depends on the client's data model (relationFilterKey).
         query = []
         if target_type:
             query.append({"type": "type", "value": target_type})
         query.append(
             {
                 "type": "selection",
-                "key": f"relations.{relation_type}.key",
+                "key": self._config.relation_filter_key_for(relation_type),
                 "value": entity_id,
                 "match_exact": True,
             }
