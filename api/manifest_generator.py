@@ -175,7 +175,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
         from urllib.parse import quote
 
         base_url = self.presentation_api_url.rstrip("/")
-        manifest_id = f"{base_url}/iiif/manifest/{entity_id}"
+        manifest_id = f"{base_url}/iiif/{entity_id}/manifest"
         query_params = []
         if self._config_file:
             query_params.append(f"config_file={self._config_file}")
