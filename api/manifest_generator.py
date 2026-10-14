@@ -301,7 +301,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
         base_url = self.presentation_api_url.rstrip("/")
         canvas_id = f"{base_url}/{entity_id}/canvas/{index + 1}"
         annotation_page_id = f"{canvas_id}/page/1"
-        annotation_id = f"{canvas_id}/annotation/1"
+        annotation_id = f"{annotation_page_id}/annotation/1"
 
         canvas = {
             "id": canvas_id,
