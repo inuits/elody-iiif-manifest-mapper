@@ -62,6 +62,7 @@ api.add_resource(
 api.add_resource(
     ConfigurableManifest,
     "/iiif/manifest/<string:entity_id>",
+    "/iiif/<string:entity_id>/manifest",
     "/manifest/<string:entity_id>",
     "/manifest/<string:entity_id>/3",
     "/<string:entity_id>/manifest",
