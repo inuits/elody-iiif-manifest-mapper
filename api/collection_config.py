@@ -171,6 +171,10 @@ class CollectionConfig:
     behavior: str | None = None
     provider: list | None = None
     relation_filter_key: str = "relations.{relation}.key"
+    # How a mediafile is named in image-API URLs: "id" (the mediafile _id,
+    # resolved by the image server) or "filename" (the stored file name,
+    # for image servers that only know object keys).
+    image_identifier: str = "id"
 
     def relation_filter_key_for(self, relation_type: str) -> str:
         relation_snake = re.sub(r"(?<!^)(?=[A-Z])", "_", relation_type).lower()
@@ -218,6 +222,7 @@ class CollectionConfig:
             relation_filter_key=data.get(
                 "relationFilterKey", "relations.{relation}.key"
             ),
+            image_identifier=data.get("imageIdentifier", "id"),
         )
 
     @classmethod

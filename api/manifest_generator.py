@@ -288,7 +288,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
             return None
 
         entity_id = entity.get("_id") or entity.get("id")
-        mediafile_id = mediafile.get("_id") or mediafile.get("id") or filename
+        mediafile_id = self._image_identifier(mediafile) or filename
 
         # Get dimensions (top-level fields, metadata dict or metadata array)
         width, height = self._get_dimensions(mediafile)
@@ -744,9 +744,21 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         return None
 
+    def _image_identifier(self, mediafile: dict) -> str | None:
+        """Identifier of a mediafile in image-API URLs (see imageIdentifier)."""
+        mediafile_id = mediafile.get("_id") or mediafile.get("id")
+        if self._config and self._config.image_identifier == "filename":
+            # The stored object key, never original_filename (an upload name).
+            return (
+                mediafile.get("transcode_filename")
+                or mediafile.get("filename")
+                or mediafile_id
+            )
+        return mediafile_id
+
     def _get_thumbnail_from_mediafile(self, mediafile: dict) -> dict | None:
         """Get thumbnail object from a mediafile."""
-        mediafile_id = mediafile["_id"]
+        mediafile_id = self._image_identifier(mediafile)
         if mediafile_id:
             image_base = self._image_base_url or self.image_api_url_ext
             width, height = self._get_dimensions(mediafile)

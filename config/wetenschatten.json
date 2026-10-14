@@ -6,6 +6,7 @@
   "attribution": "Vlaams Instituut voor de Zee (VLIZ)",
   "baseUrl": "http://localhost:8080",
   "relationFilterKey": "properties.{relation_snake}.value",
+  "imageIdentifier": "filename",
 
   "traversalSteps": [
     {
