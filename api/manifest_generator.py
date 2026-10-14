@@ -299,7 +299,7 @@ class ConfigurableManifestGenerator(BaseGenerator):
 
         # Build canvas URL (strip trailing slashes from base URL)
         base_url = self.presentation_api_url.rstrip("/")
-        canvas_id = f"{base_url}/canvas/{entity_id}/{index}"
+        canvas_id = f"{base_url}/{entity_id}/canvas/{index + 1}"
         annotation_page_id = f"{canvas_id}/page/1"
         annotation_id = f"{canvas_id}/annotation/1"
 
