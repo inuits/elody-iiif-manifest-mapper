@@ -7,7 +7,7 @@ click==8.1.7
 elody==0.0.61
 Flask==3.0.3
 Flask-RESTful==0.3.10
-frozendict==2.4.4
+frozendict==2.4.7
 gunicorn==23.0.0
 idna==3.7
 iiif-prezi==0.3.0
