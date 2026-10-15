@@ -49,11 +49,10 @@ class ConfigurableManifest(Resource):
         config_file = request.args.get("config_file", type=str)
         image_base_url = request.args.get("image_base_url", type=str)
 
-        # Check pre-generation cache
-        from resources.pre_generate import manifest_cache
+        # Check the pre-generation cache (shared by all workers)
+        from resources.pre_generate import cache_key, get_cached_manifest
 
-        cache_key = (entity_id, config_file or "", image_base_url or "")
-        cached = manifest_cache.get(cache_key)
+        cached = get_cached_manifest(cache_key(entity_id, config_file, image_base_url))
         if cached is not None:
             return (
                 cached,

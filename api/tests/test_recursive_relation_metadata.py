@@ -107,18 +107,3 @@ def test_collection_parent_metadata_includes_ancestor_albums(monkeypatch):
     metadata = gen._build_parent_only_metadata(MEDIA)
 
     assert _album_values(metadata) == ["Leaf", "Mid", "Top"]
-
-
-def test_pre_generate_parent_metadata_includes_ancestor_albums(manifest_gen):
-    # The canopy build pre-generates manifests and the mapper serves those from
-    # cache, so this path must resolve ancestor albums too.
-    from resources.pre_generate import PreGenerate
-
-    pre_generate = PreGenerate()
-    pre_generate.generator = manifest_gen
-
-    metadata = pre_generate._resolve_parent_metadata(
-        MEDIA, CollectionConfig.from_json_file("wetenschatten")
-    )
-
-    assert _album_values(metadata) == ["Leaf", "Mid", "Top"]

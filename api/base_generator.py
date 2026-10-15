@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 from collections.abc import Iterator
@@ -24,6 +25,13 @@ class Singleton(type):
 
 
 class BaseGenerator(metaclass=Singleton):
+    # Opt-in memo of successful collection-api responses, keyed by request.
+    # Only set for the duration of a batch run (see resources/pre_generate.py)
+    # so shared lookups (parent media, albums, creators, licenses) are fetched
+    # once; None — the default — means every call goes to collection-api.
+    # Generators are singletons, so whoever sets it must reset it.
+    _response_cache: dict | None = None
+
     def __init__(self):
         self.collection_api_url = os.getenv("COLLECTION_API_URL")
         self.image_api_url = os.getenv("IMAGE_API_URL")
@@ -104,6 +112,19 @@ class BaseGenerator(metaclass=Singleton):
         mediafiles=False,
         check_canonical_uris=False,
         entity_id=None,
+    ):
+        cache_key = (endpoint, entity, mediafiles, check_canonical_uris, entity_id)
+        if self._response_cache is not None and cache_key in self._response_cache:
+            return copy.deepcopy(self._response_cache[cache_key])
+        result = self._fetch_from_collection_api(
+            endpoint, entity, mediafiles, check_canonical_uris, entity_id
+        )
+        if self._response_cache is not None:
+            self._response_cache[cache_key] = copy.deepcopy(result)
+        return result
+
+    def _fetch_from_collection_api(
+        self, endpoint, entity, mediafiles, check_canonical_uris, entity_id
     ):
         req = self.session.get(
             f"{self.collection_api_url}{endpoint}",

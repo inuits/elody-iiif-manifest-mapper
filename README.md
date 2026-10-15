@@ -18,7 +18,7 @@ Flask service that turns Elody entities into [IIIF Presentation API](https://iii
 | `GET` | `/collection/<root_entity_id>/<config_entity_id>` | Collection generated using a specific config entity. |
 | `GET` | `/iiif/manifest/<entity_id>` | Manifest generation using the configurable generator (per-client rules in `config/*.json`). |
 | `GET` | `/iiif/<entity_id>/manifest` | Same configurable manifest; this is the `id` the generator writes into each manifest. |
-| `POST` | `/pre-generate` | Trigger background pre-generation of manifests for a set of entities. |
+| `POST` | `/pre-generate` | Pre-generate and cache mediafile manifests (`config_file`, `image_base_url` query params; optional JSON body `{"parentIds": [...]}` limits it to those parents' mediafiles). Built by the same code as `/iiif/<id>/manifest`; cached on disk in `MANIFEST_CACHE_DIR` (default `/tmp/iiif-manifest-cache`) so every worker serves it. |
 | `GET` | `/health` | Liveness probe. |
 
 ## Layout
