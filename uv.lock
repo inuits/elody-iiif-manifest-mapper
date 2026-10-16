@@ -95,7 +95,7 @@ wheels = [
 [[package]]
 name = "elody"
 version = "0.0.269"
-source = { git = "https://github.com/inuits/elody-python-sdk.git?rev=feat%2Fanalytics-observability#dc7355ad9e3cbfe077a5ff876fe08b8bf624b4d8" }
+source = { url = "https://github.com/inuits/elody-python-sdk/archive/refs/heads/feat/analytics-observability.tar.gz" }
 dependencies = [
     { name = "certifi" },
     { name = "charset-normalizer" },
@@ -103,6 +103,7 @@ dependencies = [
     { name = "requests" },
     { name = "urllib3" },
 ]
+sdist = { hash = "sha256:846d05a607081327ee69a2333a0d89df9c2ece8674368d22d75a345fe290ebc9" }
 
 [package.optional-dependencies]
 observability = [
@@ -113,6 +114,30 @@ observability = [
     { name = "opentelemetry-instrumentation-requests" },
     { name = "opentelemetry-sdk" },
 ]
+
+[package.metadata]
+requires-dist = [
+    { name = "apscheduler", marker = "extra == 'loader'", specifier = ">=3.10.4" },
+    { name = "certifi", specifier = ">=2023.5.7" },
+    { name = "charset-normalizer", specifier = ">=3.2.0" },
+    { name = "cloudevents", marker = "extra == 'loader'", specifier = ">=2.0.0" },
+    { name = "cloudevents", marker = "extra == 'util'", specifier = ">=2.0.0" },
+    { name = "flask", marker = "extra == 'observability'", specifier = ">=3.0.0" },
+    { name = "idna", specifier = ">=3.4" },
+    { name = "inuits-policy-based-auth", marker = "extra == 'loader'", specifier = ">=10.0.1" },
+    { name = "jsonschema", marker = "extra == 'loader'", specifier = ">=4.23.0" },
+    { name = "opentelemetry-api", marker = "extra == 'observability'", specifier = ">=1.44.0" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'observability'", specifier = ">=1.44.0" },
+    { name = "opentelemetry-instrumentation-flask", marker = "extra == 'observability'", specifier = ">=0.65b0" },
+    { name = "opentelemetry-instrumentation-requests", marker = "extra == 'observability'", specifier = ">=0.65b0" },
+    { name = "opentelemetry-sdk", marker = "extra == 'observability'", specifier = ">=1.44.0" },
+    { name = "pytz", marker = "extra == 'loader'", specifier = ">=2024.1" },
+    { name = "requests", specifier = ">=2.31.0" },
+    { name = "six", marker = "extra == 'loader'", specifier = ">=1.16.0" },
+    { name = "tzlocal", marker = "extra == 'loader'", specifier = ">=5.2" },
+    { name = "urllib3", specifier = ">=1.26.16" },
+]
+provides-extras = ["loader", "util", "observability"]
 
 [[package]]
 name = "flask"
@@ -236,7 +261,7 @@ requires-dist = [
     { name = "certifi", specifier = "==2024.7.4" },
     { name = "charset-normalizer", specifier = "==3.3.2" },
     { name = "click", specifier = "==8.1.7" },
-    { name = "elody", extras = ["observability"], git = "https://github.com/inuits/elody-python-sdk.git?rev=feat%2Fanalytics-observability" },
+    { name = "elody", extras = ["observability"], url = "https://github.com/inuits/elody-python-sdk/archive/refs/heads/feat/analytics-observability.tar.gz" },
     { name = "flask", specifier = "==3.0.3" },
     { name = "flask-restful", specifier = "==0.3.10" },
     { name = "frozendict", specifier = "==2.4.4" },
