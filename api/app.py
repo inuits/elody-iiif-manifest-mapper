@@ -7,7 +7,7 @@ from flask import Flask
 from flask_restful import Api
 from healthcheck import HealthCheck
 from werkzeug.middleware.proxy_fix import ProxyFix
-from observability import init_observability
+from elody.observability import init_observability
 
 app = Flask(__name__)
 init_observability(app)
