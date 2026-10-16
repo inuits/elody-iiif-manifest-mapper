@@ -7,18 +7,10 @@ from flask import Flask
 from flask_restful import Api
 from healthcheck import HealthCheck
 from werkzeug.middleware.proxy_fix import ProxyFix
-
-if os.getenv("GLITCH_TIP_ENABLED", "False") in ["True", "true", True]:
-    import sentry_sdk
-    from sentry_sdk.integrations.flask import FlaskIntegration
-
-    sentry_sdk.init(
-        dsn=os.getenv("GLITCH_TIP_DSN"),
-        integrations=[FlaskIntegration()],
-        environment=os.getenv("NOMAD_NAMESPACE"),
-    )
+from observability import init_observability
 
 app = Flask(__name__)
+init_observability(app)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
 api = Api(app)
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(16))
