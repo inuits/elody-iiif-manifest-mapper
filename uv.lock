@@ -94,8 +94,8 @@ wheels = [
 
 [[package]]
 name = "elody"
-version = "0.0.61"
-source = { registry = "https://pypi.org/simple" }
+version = "0.0.269"
+source = { git = "https://github.com/inuits/elody-python-sdk.git?rev=feat%2Fanalytics-observability#dc7355ad9e3cbfe077a5ff876fe08b8bf624b4d8" }
 dependencies = [
     { name = "certifi" },
     { name = "charset-normalizer" },
@@ -103,9 +103,15 @@ dependencies = [
     { name = "requests" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8a/2e/c1ea1d36e0cb7a6013ca1b526854632fceeaf6964e49bfacc331cb7ea3a2/elody-0.0.61.tar.gz", hash = "sha256:eeed21816376e4c4604d6f8c7dc3b58d4536108c14b39cf48b953987892c16c2", size = 31387, upload-time = "2024-03-08T14:30:17.907Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/58/37ff46db90b369c24f209636cf3c673d04a31683d7bfb7e984f740a90504/elody-0.0.61-py3-none-any.whl", hash = "sha256:c95a33539d8e0f8628f38ce8d0e69bab3b92e7553c67a5104826aa49d9181b0d", size = 37105, upload-time = "2024-03-08T14:30:15.671Z" },
+
+[package.optional-dependencies]
+observability = [
+    { name = "flask" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-instrumentation-flask" },
+    { name = "opentelemetry-instrumentation-requests" },
+    { name = "opentelemetry-sdk" },
 ]
 
 [[package]]
@@ -193,7 +199,7 @@ dependencies = [
     { name = "certifi" },
     { name = "charset-normalizer" },
     { name = "click" },
-    { name = "elody" },
+    { name = "elody", extra = ["observability"] },
     { name = "flask" },
     { name = "flask-restful" },
     { name = "frozendict" },
@@ -205,11 +211,6 @@ dependencies = [
     { name = "jinja2" },
     { name = "lxml" },
     { name = "markupsafe" },
-    { name = "opentelemetry-api" },
-    { name = "opentelemetry-exporter-otlp-proto-http" },
-    { name = "opentelemetry-instrumentation-flask" },
-    { name = "opentelemetry-instrumentation-requests" },
-    { name = "opentelemetry-sdk" },
     { name = "packaging" },
     { name = "pillow" },
     { name = "py-healthcheck" },
@@ -235,7 +236,7 @@ requires-dist = [
     { name = "certifi", specifier = "==2024.7.4" },
     { name = "charset-normalizer", specifier = "==3.3.2" },
     { name = "click", specifier = "==8.1.7" },
-    { name = "elody", specifier = "==0.0.61" },
+    { name = "elody", extras = ["observability"], git = "https://github.com/inuits/elody-python-sdk.git?rev=feat%2Fanalytics-observability" },
     { name = "flask", specifier = "==3.0.3" },
     { name = "flask-restful", specifier = "==0.3.10" },
     { name = "frozendict", specifier = "==2.4.4" },
@@ -247,11 +248,6 @@ requires-dist = [
     { name = "jinja2", specifier = "==3.1.4" },
     { name = "lxml", specifier = "==5.3.0" },
     { name = "markupsafe", specifier = "==2.1.5" },
-    { name = "opentelemetry-api", specifier = "==1.44.0" },
-    { name = "opentelemetry-exporter-otlp-proto-http", specifier = "==1.44.0" },
-    { name = "opentelemetry-instrumentation-flask", specifier = "==0.65b0" },
-    { name = "opentelemetry-instrumentation-requests", specifier = "==0.65b0" },
-    { name = "opentelemetry-sdk", specifier = "==1.44.0" },
     { name = "packaging", specifier = "==24.1" },
     { name = "pillow", specifier = "==12.0.0" },
     { name = "py-healthcheck", specifier = "==1.10.1" },
