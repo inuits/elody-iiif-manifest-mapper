@@ -9,6 +9,16 @@ from healthcheck import HealthCheck
 from werkzeug.middleware.proxy_fix import ProxyFix
 from elody.observability import init_observability
 
+if os.getenv("GLITCH_TIP_ENABLED", "False") in ["True", "true", True]:
+    import sentry_sdk
+    from sentry_sdk.integrations.flask import FlaskIntegration
+
+    sentry_sdk.init(
+        dsn=os.getenv("GLITCH_TIP_DSN"),
+        integrations=[FlaskIntegration()],
+        environment=os.getenv("NOMAD_NAMESPACE"),
+    )
+
 app = Flask(__name__)
 init_observability(app)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
