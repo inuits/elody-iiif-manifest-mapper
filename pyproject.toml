@@ -30,7 +30,7 @@ dependencies = [
   "pytz==2024.1",
   "requests==2.32.3",
   "sentry-sdk[flask]==2.13.0",
-  "six==1.16.0",
+  "six==1.17.0",
   "typing-extensions==4.12.2",
   "urllib3==2.2.2",
   "werkzeug==3.0.3",
