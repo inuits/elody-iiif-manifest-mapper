@@ -11,6 +11,13 @@
       "id": "https://data.antwerpen.be/agent/stad-antwerpen",
       "type": "Agent",
       "label": { "nl": ["Stad Antwerpen"] },
+      "logo": [
+        {
+          "id": "https://dams.antwerpen.be/logo.svg",
+          "type": "Image",
+          "format": "image/svg+xml"
+        }
+      ],
       "homepage": [
         {
           "id": "https://antwerpen.be/",
